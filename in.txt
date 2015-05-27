@@ -1,0 +1,9 @@
+1
+@gonzo
+Texto de teste
+Brasil
+230
+pt_BR
+100
+100000
+0
