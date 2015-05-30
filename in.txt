@@ -6,4 +6,12 @@ Brasil
 pt_BR
 100
 100000
+1
+@graça
+Sem noção mesmo. Texto de exemplo e teste do graça
+India
+3200
+inglês
+200
+10000000000
 0

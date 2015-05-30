@@ -37,17 +37,22 @@ str_create(const char * original)
 }
 
 String *
-str_from_stdin()
+str_from_file(FILE *fp, const char *stopchars)
 {
     String *str = str_init();
-    char finish_chars[] = {EOF, '\n', '\r', '\0'};
     do{
-        int c = getchar();
-        if (strchr(finish_chars, c))
+        int c = getc(fp);
+        if (!c || c == EOF || strchr(stopchars, c))
             break;
         str_append_char(str, c);
     }while(1);
     return str;
+}
+
+String *
+str_from_stdin()
+{
+    return str_from_file(stdin, "\n\r");
 }
 
 void

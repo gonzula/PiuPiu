@@ -17,6 +17,7 @@ typedef struct
     long views_count;
 } Tweet;
 
+Tweet *tweet_init();
 Tweet *tweet_create(
     String *text,
     String *user,

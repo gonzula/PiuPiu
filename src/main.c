@@ -29,7 +29,6 @@ menu()
 int
 main(int argc, char *argv[])
 {
-
     FileFields *ff = tweet_filefields();
     ffields_print(ff);
     FileManager *fman = fman_create("/Users/gonzo/Desktop/PiuPiu.bin", ff);
@@ -49,6 +48,23 @@ main(int argc, char *argv[])
             }
                 break;
             case 2:
+            {
+                // String *search = str_create("123");
+                // long search = 100000;
+                Vector *offset_vector = fman_list_all(fman);// = fman_search_by_field(fman, 6, &search);
+                // release(search);
+                printf("\nfound:%zu\n", offset_vector->count);
+                for (int i = 0; i < offset_vector->count; ++i)
+                {
+                    Tweet *t = tweet_init();
+                    long int offset = *((long int *)offset_vector->objs[i]);
+                    fman_entry_at_offset(fman, offset, t);
+                    tweet_print(t);
+                    // printf("offset:%ld\n", offset);
+                }
+                release(offset_vector);
+
+            }
                 break;
             case 3:
                 break;

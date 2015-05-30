@@ -7,6 +7,12 @@ void
 tweet_release(void *);
 
 Tweet *
+tweet_init()
+{
+    return alloc(sizeof(Tweet), tweet_release);
+}
+
+Tweet *
 tweet_create(
     String *text,
     String *user,
@@ -17,7 +23,7 @@ tweet_create(
     long views_count
     )
 {
-    Tweet *t = (Tweet *)alloc(sizeof(Tweet), tweet_release);
+    Tweet *t = tweet_init();
     t->text = text;
     retain(text);
     t->user = user;
@@ -87,7 +93,7 @@ tweet_cmp(Tweet *t1, Tweet *t2)
 void
 tweet_print(Tweet *t)
 {
-    printf("%s: \"%s\"\n", t->user->string, t->text->string);
+    printf("%s: \"%s\" @ %s (%ld)\n", t->user->string, t->text->string, t->coordinates->string, t->views_count);
 }
 
 
@@ -106,12 +112,12 @@ tweet_filefields()
 {
     Tweet t;
     return ffields_create(7,
-    str_f,  (void *)&t.text - (void *)&t,/*text*/
-    str_f,  (void *)&t.user - (void *)&t,/*user*/
-    str_f,  (void *)&t.coordinates - (void *)&t,/*coordinates*/
-    int_f,  (void *)&t.favorite_count - (void *)&t,/*favorite_count*/
-    str_f,  (void *)&t.language - (void *)&t,/*language*/
-    int_f,  (void *)&t.retweet_count - (void *)&t,/*retweet_count*/
-    long_f, (void *)&t.views_count - (void *)&t/*views_count*/
+    str_f,  (void *)&t.text - (void *)&t,           /*text*/
+    str_f,  (void *)&t.user - (void *)&t,           /*user*/
+    str_f,  (void *)&t.coordinates - (void *)&t,    /*coordinates*/
+    int_f,  (void *)&t.favorite_count - (void *)&t, /*favorite_count*/
+    str_f,  (void *)&t.language - (void *)&t,       /*language*/
+    int_f,  (void *)&t.retweet_count - (void *)&t,  /*retweet_count*/
+    long_f, (void *)&t.views_count - (void *)&t     /*views_count*/
     );
 }
