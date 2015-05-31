@@ -415,4 +415,5 @@ ffields_release(void *o)
 {
     FileFields *ff = o;
     free(ff->fields);
+    free(ff->offsets);
 }

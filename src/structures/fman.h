@@ -19,8 +19,8 @@ typedef enum
 
 typedef struct
 {
-    FieldType *fields;
-    size_t *offsets;
+    FieldType *fields; // list of field types
+    size_t *offsets; // offsets of the fields
     size_t fieldc; // fields count
 } FileFields;
 

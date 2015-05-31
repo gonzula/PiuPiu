@@ -55,7 +55,8 @@ release(void *ptr)
     }
 }
 
-int refcnt_getcnt(void *ptr)
+int
+refcnt_getcnt(void *ptr)
 {
     _refcnt_objwrapper * ow;
     char *cptr;

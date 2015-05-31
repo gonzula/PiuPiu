@@ -13,9 +13,9 @@ int
 menu()
 {
     printf("Escolha uma opção:\n");
-    printf("\t1 - Criar Tweet\n");
+    printf("\t1 - Inserir Tweets\n");
     printf("\t2 - Listar Tweets\n");
-    printf("\t3 - Deletar Tweet\n");
+    printf("\t3 - Buscar Tweet por usuário\n");
     printf("\n");
     printf("\t0 - Sair\n");
     String *choice = str_from_stdin();
@@ -24,29 +24,31 @@ menu()
     return ichoice;
 }
 
-
-
 int
 main(int argc, char *argv[])
 {
     FileFields *ff = tweet_filefields();
     ffields_print(ff);
-    FileManager *fman = fman_create("/Users/gonzo/Desktop/PiuPiu.bin", ff);
+    FileManager *fman = fman_create("PiuPiu.bin", ff);
     release(ff);
 
-    while(1)
+    int quit = 0;
+    while(!quit)
     {
         switch (menu())
         {
             case 1:
             {
-                Tweet *t = tweet_from_stdin();
-                // tweet_print(t);
-                // printf("%ld\n", t->views_count);
-                fman_add_entry(fman, t);
-                release(t);
+                printf("Digite as informações, para interromper deixe o campo usuário em branco.\n");
+                while(1)
+                {
+                    Tweet *t = tweet_from_stdin();
+                    if (!t)break;
+                    fman_add_entry(fman, t);
+                    release(t);
+                }
             }
-                break;
+            break;
             case 2:
             {
                 // String *search = str_create("123");
@@ -60,16 +62,32 @@ main(int argc, char *argv[])
                     long int offset = *((long int *)offset_vector->objs[i]);
                     fman_entry_at_offset(fman, offset, t);
                     tweet_print(t);
-                    // printf("offset:%ld\n", offset);
+                    release(t);
                 }
                 release(offset_vector);
-
             }
-                break;
+            break;
             case 3:
-                break;
+            {
+                printf("Usuário: ");
+                String *user = str_from_stdin();
+                Vector *offset_vector = fman_search_by_field(fman, 1, user);
+                release(user);
+                printf("\nfound:%zu\n", offset_vector->count);
+                for (int i = 0; i < offset_vector->count; ++i)
+                {
+                    Tweet *t = tweet_init();
+                    long int offset = *((long int *)offset_vector->objs[i]);
+                    fman_entry_at_offset(fman, offset, t);
+                    tweet_print(t);
+                    release(t);
+                }
+                release(offset_vector);
+            }
+            break;
             case 0:
-                return 0;
+                quit = 1;
+                break;
             default:
                 printf("Opção inválida\n");
                 break;

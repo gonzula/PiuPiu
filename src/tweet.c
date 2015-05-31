@@ -45,6 +45,11 @@ tweet_from_stdin()
     String *aux_str;
     printf("Insira o usuário: ");
     String *user = str_from_stdin();
+    if (!user->len)
+    {
+        release(user);
+        return NULL;
+    }
 
     printf("Insira o texto: ");
     String *text = str_from_stdin();
