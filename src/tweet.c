@@ -117,12 +117,12 @@ tweet_filefields()
 {
     Tweet t;
     return ffields_create(7,
-    str_f,  (void *)&t.text - (void *)&t,           /*text*/
-    str_f,  (void *)&t.user - (void *)&t,           /*user*/
-    str_f,  (void *)&t.coordinates - (void *)&t,    /*coordinates*/
-    int_f,  (void *)&t.favorite_count - (void *)&t, /*favorite_count*/
-    str_f,  (void *)&t.language - (void *)&t,       /*language*/
-    int_f,  (void *)&t.retweet_count - (void *)&t,  /*retweet_count*/
-    long_f, (void *)&t.views_count - (void *)&t     /*views_count*/
+    str_f,  (void *)&t.text - (void *)&t,           0,  /*text*/
+    str_f,  (void *)&t.user - (void *)&t,           0,  /*user*/
+    str_f,  (void *)&t.coordinates - (void *)&t,    0,  /*coordinates*/
+    int_f,  (void *)&t.favorite_count - (void *)&t, 1,  /*favorite_count*/
+    str_f,  (void *)&t.language - (void *)&t,       1,  /*language*/
+    int_f,  (void *)&t.retweet_count - (void *)&t,  0,  /*retweet_count*/
+    long_f, (void *)&t.views_count - (void *)&t     0   /*views_count*/
     );
 }

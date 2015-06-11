@@ -18,15 +18,15 @@ ftype_size_of(FieldType ft)
     size_t field_size = 0;
     switch (ft)
     {
-        case str_f:    field_size = sizeof(String *);       break;
-        case int_f:    field_size = sizeof(int);            break;
-        case uint_f:   field_size = sizeof(unsigned int);   break;
-        case long_f:   field_size = sizeof(long);           break;
-        case ulong_f:  field_size = sizeof(unsigned long);  break;
-        case float_f:  field_size = sizeof(float);          break;
-        case double_f: field_size = sizeof(double);         break;
-        case char_f:   field_size = sizeof(char);           break;
-        case uchar_f:  field_size = sizeof(unsigned char);  break;
+        case str_f:    field_size = sizeof(char);          break;
+        case int_f:    field_size = sizeof(int);           break;
+        case uint_f:   field_size = sizeof(unsigned int);  break;
+        case long_f:   field_size = sizeof(long);          break;
+        case ulong_f:  field_size = sizeof(unsigned long); break;
+        case float_f:  field_size = sizeof(float);         break;
+        case double_f: field_size = sizeof(double);        break;
+        case char_f:   field_size = sizeof(char);          break;
+        case uchar_f:  field_size = sizeof(unsigned char); break;
     }
     return field_size;
 }
@@ -41,12 +41,20 @@ ffields_create(size_t count, ...)
     ff->offsets = (size_t *)malloc(sizeof(size_t) * count);
     ff->fieldc = count;
     va_start(ap, count);
-    for(j=0; j<count * 2; j++)
+    for(j=0; j<count * 3; j++)
     {
-        if (!(j % 2))
-            ff->fields[j/2] = va_arg(ap, FieldType);
-        else
-            ff->offsets[j/2] = va_arg(ap, size_t);
+        if ((j % 3) == 0)
+        {
+            ff->fields[j/3] = va_arg(ap, FieldType);
+        }
+        else if ((j % 3) == 1)
+        {
+            ff->offsets[j/3] = va_arg(ap, size_t);
+        }
+        else if ((j % 3) == 2)
+        {
+            if (va_arg(ap, int))
+        }
     }
     va_end(ap);
     return ff;
@@ -74,32 +82,95 @@ ffields_print(FileFields *ff)
     }
 }
 
+size_t
+ffields_size(FileFields *ff)
+{
+    size_t size = 0;
+    for (int i = 0; i < ff->fieldc; ++i)
+    {
+        size += ftype_size_of(ff->offsets[i]);
+    }
+    return size;
+}
+
+// typedef struct
+// {
+//     FieldType ftype;
+//     int field_idx;
+// } FieldIndex;
+
+FieldIndex *
+fidx_create(FieldType *ftype, int field_idx)
+{
+    FieldIndex *fidx = alloc(sizeof(FieldIndex), NULL);
+}
+
 FileManager *
 fman_create(char *fname, FileFields *ff)
 {
+    String *bin_fname = str_create(fname);
+    str_append(bin_fname, ".bin");
+
     FileManager *fman = alloc(sizeof(FileManager), fman_release);
-    fman->fp = fopen(fname, "rb+");
+    fman->fp = fopen(bin_fname->string, "rb+");
     if (!fman->fp) // if doesn't exists
     {
-        fman->fp = fopen(fname, "w"); //create
+        fman->fp = fopen(bin_fname->string, "w"); //create
         long int stack_top = -1;
         fwrite(&stack_top, sizeof(stack_top), 1, fman->fp); // write top of stack
         fclose(fman->fp);
-        fman->fp = fopen(fname, "rb+"); //and reopen in update mode
+        fman->fp = fopen(bin_fname->string, "rb+"); //and reopen in update mode
     }
     fman->ff = ff;
     retain(ff);
+
+    Vector *offsets = fman_list_all(fman);
+    fman->entryc = offsets->count;
+    release(offsets);
+
+    release(bin_fname);
+
+    fman->db_name = str_create(fname);
     return fman;
 }
 
 long int
-fman_free_offset_for_size(FileManager *fman, size_t size)
+fman_free_offset_for_size(FileManager *fman, int size)
 {
+    //TODO: implement best fit
+    fseek(fman->fp, 0, SEEK_SET);
+    long int next_entry = -1;
+    fread(&next_entry, sizeof(next_entry), 1, fman->fp);
+    long int best_fit = 0;
+    size_t best_fit_size = 0xFFFF;
+    size_t min_entry_size = ffields_size(fman->ff);
+    while(next_entry != -1 && feof(fman->fp))
+    {
+        fseek(fman->fp, next_entry, SEEK_SET);
+        int this_entry_size;
+        fread(&this_entry_size, sizeof(this_entry_size), 1, fman->fp);
+        this_entry_size = -this_entry_size;
+        if (this_entry_size <= 0)
+        {
+            break;
+        }
+        else if (this_entry_size == size) //best-fit
+        {
+            best_fit = ftell(fman->fp);
+            break;
+        }
+        else if (this_entry_size - min_entry_size > 0 &&
+                 this_entry_size - min_entry_size < best_fit_size)
+        {
+            best_fit_size = this_entry_size - min_entry_size;
+            best_fit = ftell(fman->fp);
+        }
+    }
+    if (best_fit)
+        return best_fit;
     fseek(fman->fp, 0, SEEK_END);
     return ftell(fman->fp);
 }
-
-
 
 Vector *
 fman_list_all(FileManager *fman)
@@ -254,7 +325,6 @@ fman_search_by_field(FileManager *fman,
         return offset_vector;
     }
     return NULL;
-
 }
 
 void
@@ -272,64 +342,6 @@ fman_add_entry(FileManager *fman, void *o)
         {
             entry_size += ftype_size_of(fman->ff->fields[j]);
         }
-
-        // switch(fman->ff->fields[j])
-        // {
-        //     case str_f:
-        //     {
-        //         puts((*(String **)(entry))->string);
-        //         entry_size += sizeof(char) * ((*(String **)(entry))->len + 1);
-        //     }
-        //     break;
-        //     case int_f:
-        //     {
-        //         printf("%d\n", (*(int *)entry));
-        //         entry_size += sizeof(int);
-        //     }
-        //     break;
-        //     case uint_f:
-        //     {
-        //         printf("%u\n", (*(unsigned int *)entry));
-        //         entry_size += sizeof(unsigned int);
-        //     }
-        //     break;
-        //     case long_f:
-        //     {
-        //         printf("%ld\n", (*(long *)entry));
-        //         entry_size += sizeof(long);
-        //     }
-        //     break;
-        //     case ulong_f:
-        //     {
-        //         printf("%ld\n", (*(unsigned long *)entry));
-        //         entry_size += sizeof(unsigned long);
-        //     }
-        //     break;
-        //     case float_f:
-        //     {
-        //         printf("%f\n", (*(float *)entry));
-        //         entry_size += sizeof(float);
-        //     }
-        //     break;
-        //     case double_f:
-        //     {
-        //         printf("%lf\n", (*(double *)entry));
-        //         entry_size += sizeof(double);
-        //     }
-        //     break;
-        //     case char_f:
-        //     {
-        //         printf("%c\n", (*(char *)entry));
-        //         entry_size += sizeof(char);
-        //     }
-        //     break;
-        //     case uchar_f:
-        //     {
-        //         printf("%c\n", (*(unsigned char *)entry));
-        //         entry_size += sizeof(unsigned char);
-        //     }
-        //     break;
-        // }
     }
     long int offset = 0;
     offset = fman_free_offset_for_size(
@@ -407,6 +419,7 @@ fman_release(void *o)
 {
     FileManager *fman = o;
     release(fman->ff);
+    release(fman->db_name);
     fclose(fman->fp);
 }
 

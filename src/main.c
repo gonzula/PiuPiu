@@ -28,8 +28,7 @@ int
 main(int argc, char *argv[])
 {
     FileFields *ff = tweet_filefields();
-    ffields_print(ff);
-    FileManager *fman = fman_create("PiuPiu.bin", ff);
+    FileManager *fman = fman_create("PiuPiu", ff);
     release(ff);
 
     int quit = 0;
@@ -39,9 +38,9 @@ main(int argc, char *argv[])
         {
             case 1:
             {
-                printf("Digite as informações, para interromper deixe o campo usuário em branco.\n");
                 while(1)
                 {
+                    printf("\nDigi te as informações, para terminar a insersão deixe o campo usuário em branco.\n\n");
                     Tweet *t = tweet_from_stdin();
                     if (!t)break;
                     fman_add_entry(fman, t);
@@ -51,10 +50,7 @@ main(int argc, char *argv[])
             break;
             case 2:
             {
-                // String *search = str_create("123");
-                // long search = 100000;
-                Vector *offset_vector = fman_list_all(fman);// = fman_search_by_field(fman, 6, &search);
-                // release(search);
+                Vector *offset_vector = fman_list_all(fman);
                 printf("\nfound:%zu\n", offset_vector->count);
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
@@ -94,5 +90,6 @@ main(int argc, char *argv[])
         }
     }
     release(fman);
+    printf("\nGood bye\n\n");
     return EXIT_SUCCESS;
 }

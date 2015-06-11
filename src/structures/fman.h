@@ -26,8 +26,19 @@ typedef struct
 
 typedef struct
 {
+    FieldType ftype;
+    int field_idx;
+    FILE *indexf;
+    FILE *invlstf;
+} FieldIndex;
+
+typedef struct
+{
     FileFields *ff;
     FILE *fp;
+    size_t entryc; //entry count
+    String *db_name;
+    FieldIndex *indexes;
 } FileManager;
 
 FileFields *ffields_create(size_t count, ...);
