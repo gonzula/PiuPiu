@@ -2,6 +2,7 @@
 #define __str_H_
 
 #include <stdio.h>
+#include "string.h"
 
 typedef struct
 {

@@ -123,6 +123,6 @@ tweet_filefields()
     int_f,  (void *)&t.favorite_count - (void *)&t, 1,  /*favorite_count*/
     str_f,  (void *)&t.language - (void *)&t,       1,  /*language*/
     int_f,  (void *)&t.retweet_count - (void *)&t,  0,  /*retweet_count*/
-    long_f, (void *)&t.views_count - (void *)&t     0   /*views_count*/
+    long_f, (void *)&t.views_count - (void *)&t,    0   /*views_count*/
     );
 }

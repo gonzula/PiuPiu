@@ -18,12 +18,6 @@ vector_init()
     return v;
 }
 
-Vector *
-vector_create(void **objs, size_t count)
-{
-    return NULL;
-}
-
 void
 vector_append(Vector *v, void *obj)
 {

@@ -4,8 +4,14 @@ CFLAGS= -std=c11 -Wall
 
 all: piupiu.app
 
-piupiu.app: structures.o tweet.o vector.o list.o refcnt.o str.o htable.o fman.o main.o
+piupiu.app: structures.o tweet.o vector.o list.o refcnt.o str.o htable.o fman.o ffields.o fidx.o main.o
 	$(CC) $(CFLAGS) *.o -o piupiu.app
+
+fidx.o: src/structures/fidx.c
+	$(CC) $(CFLAGS) -c src/structures/fidx.c
+
+ffields.o: src/structures/ffields.c
+	$(CC) $(CFLAGS) -c src/structures/ffields.c
 
 fman.o: src/structures/fman.c
 	$(CC) $(CFLAGS) -c src/structures/fman.c
