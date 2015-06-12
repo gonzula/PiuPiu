@@ -10,13 +10,15 @@ FileFields *
 ffields_create(size_t count, ...)
 {
     va_list ap;
-    int j;
+    int j, k;
     FileFields *ff = (FileFields *)alloc(sizeof(FileFields), ffields_release);
     ff->fields = (FieldType *)malloc(sizeof(FieldType) * count);
     ff->offsets = (size_t *)malloc(sizeof(size_t) * count);
+    ff->indexes = (int *)malloc(sizeof(int) * count);
     ff->fieldc = count;
     va_start(ap, count);
-    for(j=0; j<count * 3; j++)
+
+    for(j = 0, k = 0; j < count * 3; j++)
     {
         if ((j % 3) == 0)
         {
@@ -28,7 +30,11 @@ ffields_create(size_t count, ...)
         }
         else if ((j % 3) == 2)
         {
-            if (va_arg(ap, int));
+            if (va_arg(ap, int))
+            {
+                ff->indexes[k] = j;
+                k++;
+            }
         }
     }
     va_end(ap);
@@ -94,4 +100,5 @@ ffields_release(void *o)
     FileFields *ff = o;
     free(ff->fields);
     free(ff->offsets);
+    free(ff->indexes);
 }

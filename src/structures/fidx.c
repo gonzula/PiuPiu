@@ -47,8 +47,10 @@ idx_create(FieldType ftype, void *data, long int offset)
 void
 fidx_create_index(FieldIndex *fidx)
 {
+    printf("creating index part 1\n");
     if (fidx->index) //index already exists
         return;
+    printf("creating index part 2\n");
     fidx->index = vector_init();
     String *f1_name = str_create(fidx->db_name->string);
     str_append_char(f1_name, '.');
@@ -219,6 +221,18 @@ idx_cmp(IndexEntry* e1, IndexEntry* e2)
         }
         break;
     }
+    return result;
+}
+
+int
+_idx_entry_sort(const void *v1, const void *v2)
+{
+    IndexEntry **p1 = (IndexEntry **)v1;
+    IndexEntry **p2 = (IndexEntry **)v2;
+    IndexEntry *e1 = *p1;
+    IndexEntry *e2 = *p2;
+
+    int result = idx_cmp(e1, e2);
     if (!result)
     {
         if (e1->offset < e2->offset)
@@ -228,6 +242,12 @@ idx_cmp(IndexEntry* e1, IndexEntry* e2)
         return 0;
     }
     return result;
+}
+
+void
+fidx_sort(FieldIndex *fidx)
+{
+    vector_sort(fidx->index, _idx_entry_sort);
 }
 
 void
@@ -253,8 +273,25 @@ fidx_write_file(FieldIndex *fidx)
     Vector *index = fidx->index;
     for (int i = 0; i < index->count; i++)
     {
-        // IndexEntry *e = index->objs[i];
-        // if ()
+        IndexEntry *e = index->objs[i];
+        if (e->ftype == str_f)
+        {
+            fwrite(e->str->string, sizeof(char), e->str->len + 1, f1);
+            long int last_offset = -1;
+            for (; i < index->count; i++)
+            {
+                IndexEntry *newE = index->objs[i];
+                if (idx_cmp(e, newE))
+                {
+                    i--;
+                    break;
+                }
+                fwrite(&newE->offset, sizeof(long int), 1, f2);
+                fwrite(&last_offset, sizeof(last_offset), 1, f2);
+                last_offset = ftell(f2) - sizeof(long int) - sizeof(last_offset);
+            }
+            fwrite(&last_offset, sizeof(last_offset), 1, f2);
+        }
     }
     fclose (f1);
     fclose (f2);
@@ -273,4 +310,5 @@ fidx_release(void *o)
 {
     FieldIndex *fidx = o;
     release(fidx->index);
+    release(fidx->db_name);
 }

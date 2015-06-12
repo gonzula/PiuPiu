@@ -19,8 +19,10 @@ typedef enum
 typedef struct
 {
     FieldType *fields; // list of field types
-    size_t *offsets; // offsets of the fields
-    size_t fieldc; // fields count
+    size_t *offsets;   // offsets of the fields
+    size_t fieldc;     // fields count
+    int *indexes;
+    size_t idxc;
 } FileFields;
 
 FileFields *ffields_create(size_t count, ...);

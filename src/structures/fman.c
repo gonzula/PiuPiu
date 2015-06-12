@@ -9,6 +9,7 @@
      _a < 0 ? -_a : _a; })
 
 void fman_release(void *o);
+void fman_inc_entryc(FileManager *fman, int amnt);
 
 FileManager *
 fman_create(char *fname, FileFields *ff)
@@ -29,14 +30,36 @@ fman_create(char *fname, FileFields *ff)
     fman->ff = ff;
     retain(ff);
 
+    fman->entryc = 0;
     Vector *offsets = fman_list_all(fman);
-    fman->entryc = offsets->count;
+    fman_inc_entryc(fman, offsets->count);
     release(offsets);
 
     release(bin_fname);
 
     fman->db_name = str_create(fname);
+
+    fman->indexes = vector_init();
+    for (int i = 0; i < fman->ff->idxc; i++)
+    {
+        FieldIndex *fidx = fidx_create(fman->ff->fields[i], fman->db_name, i);
+        vector_append(fman->indexes, fman->indexes);
+        release(fidx);
+    }
     return fman;
+}
+
+void
+fman_inc_entryc(FileManager *fman, int amnt)
+{
+    fman->entryc += amnt;
+    if (fman->entryc >= 10)
+    {
+        for (int i = 0; i < fman->indexes->count; i++)
+        {
+            // fidx_create_index(fman->indexes->objs[i]);
+        }
+    }
 }
 
 long int
@@ -317,6 +340,7 @@ fman_add_entry(FileManager *fman, void *o)
             break;
         }
     }
+    fman_inc_entryc(fman, 1);
 }
 
 void
@@ -325,5 +349,6 @@ fman_release(void *o)
     FileManager *fman = o;
     release(fman->ff);
     release(fman->db_name);
+    release(fman->indexes);
     fclose(fman->fp);
 }

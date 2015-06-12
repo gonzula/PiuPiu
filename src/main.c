@@ -40,7 +40,7 @@ main(int argc, char *argv[])
             {
                 while(1)
                 {
-                    printf("\nDigi te as informações, para terminar a insersão deixe o campo usuário em branco.\n\n");
+                    printf("\nDigite as informações, para terminar a insersão deixe o campo usuário em branco.\n\n");
                     Tweet *t = tweet_from_stdin();
                     if (!t)break;
                     fman_add_entry(fman, t);
@@ -81,6 +81,8 @@ main(int argc, char *argv[])
                 release(offset_vector);
             }
             break;
+
+
             case 0:
                 quit = 1;
                 break;

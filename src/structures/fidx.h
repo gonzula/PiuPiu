@@ -27,23 +27,10 @@ typedef struct
     FieldType ftype;
     String *db_name;
     int field_idx;
-    // FILE *indexf;
-    // FILE *invlstf;
     Vector *index;
 } FieldIndex;
 
-// typedef enum
-// {
-//     str_f,
-//     int_f,
-//     uint_f,
-//     long_f,
-//     ulong_f,
-//     float_f,
-//     double_f,
-//     char_f,
-//     uchar_f,
-// } FieldType;
-
+FieldIndex *fidx_create(FieldType ftype, String *db_name, int field_idx);
+void fidx_create_index(FieldIndex *fidx);
 
 #endif
