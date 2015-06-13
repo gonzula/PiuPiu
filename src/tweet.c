@@ -98,7 +98,8 @@ tweet_cmp(Tweet *t1, Tweet *t2)
 void
 tweet_print(Tweet *t)
 {
-    printf("%s: \"%s\" @ %s (%ld)\n", t->user->string, t->text->string, t->coordinates->string, t->views_count);
+    // printf("%s: \"%s\" @ %s (%i favs in %s)\n", t->user->string, t->text->string, t->coordinates->string, t->favorite_count, t->language->string);
+    printf("%s: (%i favs in %s)\n", t->user->string, t->favorite_count, t->language->string);
 }
 
 

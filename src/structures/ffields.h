@@ -29,7 +29,7 @@ FileFields *ffields_create(size_t count, ...);
 void ffields_print(FileFields *ff);
 
 size_t ftype_size_of(FieldType ft);
-size_t ffields_size(FileFields *ff);
+size_t ffields_size(FileFields *ff, size_t str_size);
 
 
 #endif

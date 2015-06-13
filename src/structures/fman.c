@@ -30,6 +30,16 @@ fman_create(char *fname, FileFields *ff)
     fman->ff = ff;
     retain(ff);
 
+    fman->db_name = str_create(fname);
+    fman->indexes = vector_init();
+    for (int i = 0; i < fman->ff->idxc; i++)
+    {
+        int field_idx = fman->ff->indexes[i];
+        FieldIndex *fidx = fidx_create(fman, fman->ff->fields[field_idx], field_idx);
+        vector_append(fman->indexes, fidx);
+        release(fidx);
+    }
+
     fman->entryc = 0;
     Vector *offsets = fman_list_all(fman);
     fman_inc_entryc(fman, offsets->count);
@@ -37,15 +47,6 @@ fman_create(char *fname, FileFields *ff)
 
     release(bin_fname);
 
-    fman->db_name = str_create(fname);
-
-    fman->indexes = vector_init();
-    for (int i = 0; i < fman->ff->idxc; i++)
-    {
-        FieldIndex *fidx = fidx_create(fman->ff->fields[i], fman->db_name, i);
-        vector_append(fman->indexes, fman->indexes);
-        release(fidx);
-    }
     return fman;
 }
 
@@ -57,7 +58,8 @@ fman_inc_entryc(FileManager *fman, int amnt)
     {
         for (int i = 0; i < fman->indexes->count; i++)
         {
-            // fidx_create_index(fman->indexes->objs[i]);
+            FieldIndex *e = fman->indexes->objs[i];
+            fidx_create_index(e);
         }
     }
 }
@@ -65,13 +67,12 @@ fman_inc_entryc(FileManager *fman, int amnt)
 long int
 fman_free_offset_for_size(FileManager *fman, int size)
 {
-    //TODO: implement best fit
     fseek(fman->fp, 0, SEEK_SET);
     long int next_entry = -1;
     fread(&next_entry, sizeof(next_entry), 1, fman->fp);
     long int best_fit = 0;
     size_t best_fit_size = 0xFFFF;
-    size_t min_entry_size = ffields_size(fman->ff);
+    size_t min_entry_size = ffields_size(fman->ff, sizeof(char));
     while(next_entry != -1 && feof(fman->fp))
     {
         fseek(fman->fp, next_entry, SEEK_SET);
@@ -156,31 +157,96 @@ Vector *
 fman_search_by_field(FileManager *fman,
     int field_idx, const void *value)
 {
-    Vector *offset_vector = vector_init();
-    if (1) // TODO: test if idx file exists
+    Vector *offset_vector = NULL;
+    for (int i = 0; i < fman->indexes->count; i++)
     {
-        fseek(fman->fp, sizeof(size_t), SEEK_SET); //skip stack pointer
-        // long int entry_offset = -1;
-        while(!feof(fman->fp))
+        FieldIndex *fidx = fman->indexes->objs[i];
+        printf("checking for field_idx:%d \n", fidx->field_idx);
+        if (fidx->field_idx == field_idx)
         {
-            int this_entry_size;
-            size_t elements_read = fread(&this_entry_size, sizeof(this_entry_size), 1, fman->fp);
-            if (!elements_read)break; //feof
-            long int this_entry_offset = ftell(fman->fp);
-            if (this_entry_size < 0) //deleted entry
+            offset_vector = fidx_search(fidx, value);
+        }
+    }
+
+    if (offset_vector)
+    {
+        printf("used cache\n");
+        return offset_vector;
+    }
+        //else no index, sequential search
+
+    offset_vector = vector_init();
+    fseek(fman->fp, sizeof(size_t), SEEK_SET); //skip stack pointer
+    // long int entry_offset = -1;
+    while(!feof(fman->fp))
+    {
+        int this_entry_size;
+        size_t elements_read = fread(&this_entry_size, sizeof(this_entry_size), 1, fman->fp);
+        if (!elements_read)break; //feof
+        long int this_entry_offset = ftell(fman->fp);
+        if (this_entry_size < 0) //deleted entry
+        {
+            this_entry_size = -this_entry_size;
+            fseek(fman->fp, this_entry_size, SEEK_CUR);
+            continue; // next entry…
+        }
+        for (int i = 0; i < fman->ff->fieldc; i++)
+        {
+            if (fman->ff->fields[i] == str_f)
             {
-                this_entry_size = -this_entry_size;
-                fseek(fman->fp, this_entry_size, SEEK_CUR);
-                continue; // next entry…
-            }
-            for (int i = 0; i < fman->ff->fieldc; i++)
-            {
-                if (fman->ff->fields[i] == str_f)
+                String *str = str_from_file(fman->fp, "");
+                if (i == field_idx)
                 {
-                    String *str = str_from_file(fman->fp, "");
-                    if (i == field_idx)
+                    if (str_eq(str, (String *)value))
                     {
-                        if (str_eq(str, (String *)value))
+                        // entry_offset = this_entry_offset;
+                        long int *entry_offset = alloc(sizeof(long int), NULL);
+                        *entry_offset = this_entry_offset;
+                        vector_append(offset_vector, entry_offset);
+                        release(entry_offset);
+                    }
+                    fseek(fman->fp,
+                        this_entry_offset + this_entry_size,
+                        SEEK_SET);
+                    release(str);
+                    break;
+                }
+                release(str);
+            }
+            else
+            {
+                size_t field_size = ftype_size_of(fman->ff->fields[i]);
+                if (i == field_idx)
+                {
+                    char this_value[30];
+                    fread(this_value, field_size, 1, fman->fp);
+                    if (fman->ff->fields[i] == float_f)
+                    {
+                        float a = *(float *)this_value;
+                        float b = *(float *)value;
+                        if (ABS(a - b) < FLT_EPSILON) // you can't simply compare byte per byte when it comes to float and double
+                        {
+                            long int *entry_offset = alloc(sizeof(long int), NULL);
+                            *entry_offset = this_entry_offset;
+                            vector_append(offset_vector, entry_offset);
+                            release(entry_offset);
+                        }
+                    }
+                    else if (fman->ff->fields[i] == double_f)
+                    {
+                        double a = *(double *)this_value;
+                        double b = *(double *)value;
+                        if (ABS(a - b) < DBL_EPSILON)
+                        {
+                            long int *entry_offset = alloc(sizeof(long int), NULL);
+                            *entry_offset = this_entry_offset;
+                            vector_append(offset_vector, entry_offset);
+                            release(entry_offset);
+                        }
+                    }
+                    else
+                    {
+                        if(memcmp(this_value, value, field_size) == 0)
                         {
                             // entry_offset = this_entry_offset;
                             long int *entry_offset = alloc(sizeof(long int), NULL);
@@ -188,71 +254,20 @@ fman_search_by_field(FileManager *fman,
                             vector_append(offset_vector, entry_offset);
                             release(entry_offset);
                         }
-                        fseek(fman->fp,
-                            this_entry_offset + this_entry_size,
-                            SEEK_SET);
-                        release(str);
-                        break;
                     }
-                    release(str);
+                    fseek(fman->fp,
+                        this_entry_offset + this_entry_size,
+                        SEEK_SET);
+                    break;
                 }
                 else
                 {
-                    size_t field_size = ftype_size_of(fman->ff->fields[i]);
-                    if (i == field_idx)
-                    {
-                        char this_value[30];
-                        fread(this_value, field_size, 1, fman->fp);
-                        if (fman->ff->fields[i] == float_f)
-                        {
-                            float a = *(float *)this_value;
-                            float b = *(float *)value;
-                            if (ABS(a - b) < FLT_EPSILON) // you can't simply compare byte per byte when it comes to float and double
-                            {
-                                long int *entry_offset = alloc(sizeof(long int), NULL);
-                                *entry_offset = this_entry_offset;
-                                vector_append(offset_vector, entry_offset);
-                                release(entry_offset);
-                            }
-                        }
-                        else if (fman->ff->fields[i] == double_f)
-                        {
-                            double a = *(double *)this_value;
-                            double b = *(double *)value;
-                            if (ABS(a - b) < DBL_EPSILON)
-                            {
-                                long int *entry_offset = alloc(sizeof(long int), NULL);
-                                *entry_offset = this_entry_offset;
-                                vector_append(offset_vector, entry_offset);
-                                release(entry_offset);
-                            }
-                        }
-                        else
-                        {
-                            if(memcmp(this_value, value, field_size) == 0)
-                            {
-                                // entry_offset = this_entry_offset;
-                                long int *entry_offset = alloc(sizeof(long int), NULL);
-                                *entry_offset = this_entry_offset;
-                                vector_append(offset_vector, entry_offset);
-                                release(entry_offset);
-                            }
-                        }
-                        fseek(fman->fp,
-                            this_entry_offset + this_entry_size,
-                            SEEK_SET);
-                        break;
-                    }
-                    else
-                    {
-                        fseek(fman->fp, field_size, SEEK_CUR);
-                    }
+                    fseek(fman->fp, field_size, SEEK_CUR);
                 }
             }
         }
-        return offset_vector;
     }
-    return NULL;
+    return offset_vector;
 }
 
 void
@@ -343,12 +358,73 @@ fman_add_entry(FileManager *fman, void *o)
     fman_inc_entryc(fman, 1);
 }
 
+int
+_vect_sort_offset(const void *v1,const void *v2)
+{
+    long int *p1 = *(long int **)v1;
+    long int *p2 = *(long int **)v2;
+    return *p1 - *p2;
+}
+
+Vector *
+fman_merge_offsets(Vector *v1, Vector *v2)
+{
+    vector_sort(v1, _vect_sort_offset);
+    vector_sort(v2, _vect_sort_offset);
+    int i = 0;
+    int k = 0;
+    Vector *result = vector_init();
+    while (i < v1->count && k < v2->count)
+    {
+        long int offset1 = *((long int *)(v1->objs[i]));
+        long int offset2 = *((long int *)(v2->objs[k]));
+        if (offset1 < offset2)
+            vector_append(result, v1->objs[i++]);
+        else if (offset1 > offset2)
+            vector_append(result, v2->objs[k++]);
+        else
+        {
+            vector_append(result, v1->objs[i]);
+            i++;
+            k++;
+        }
+    }
+    return result;
+}
+
+Vector *
+fman_match_offsets(Vector *v1, Vector *v2)
+{
+    vector_sort(v1, _vect_sort_offset);
+    vector_sort(v2, _vect_sort_offset);
+    int i = 0;
+    int k = 0;
+    Vector *result = vector_init();
+    while (i < v1->count && k < v2->count)
+    {
+        long int offset1 = *((long int *)(v1->objs[i]));
+        long int offset2 = *((long int *)(v2->objs[k]));
+        if (offset1 < offset2)
+            i++;
+        else if (offset1 > offset2)
+            k++;
+        else
+        {
+            vector_append(result, v1->objs[i]);
+            i++;
+            k++;
+        }
+    }
+    return result;
+}
+
 void
 fman_release(void *o)
 {
     FileManager *fman = o;
+
+    release(fman->indexes);
     release(fman->ff);
     release(fman->db_name);
-    release(fman->indexes);
     fclose(fman->fp);
 }

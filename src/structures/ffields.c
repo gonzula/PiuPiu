@@ -3,6 +3,7 @@
 #include "structures.h"
 
 #include "fman.h"
+#include "ffields.h"
 
 void ffields_release(void *o);
 
@@ -10,15 +11,17 @@ FileFields *
 ffields_create(size_t count, ...)
 {
     va_list ap;
-    int j, k;
+    int j;
     FileFields *ff = (FileFields *)alloc(sizeof(FileFields), ffields_release);
     ff->fields = (FieldType *)malloc(sizeof(FieldType) * count);
     ff->offsets = (size_t *)malloc(sizeof(size_t) * count);
     ff->indexes = (int *)malloc(sizeof(int) * count);
     ff->fieldc = count;
+
+    ff->idxc = 0;
     va_start(ap, count);
 
-    for(j = 0, k = 0; j < count * 3; j++)
+    for(j = 0; j < count * 3; j++)
     {
         if ((j % 3) == 0)
         {
@@ -32,8 +35,8 @@ ffields_create(size_t count, ...)
         {
             if (va_arg(ap, int))
             {
-                ff->indexes[k] = j;
-                k++;
+                ff->indexes[ff->idxc] = j/3;
+                ff->idxc++;
             }
         }
     }
@@ -84,12 +87,15 @@ ftype_size_of(FieldType ft)
 }
 
 size_t
-ffields_size(FileFields *ff)
+ffields_size(FileFields *ff, size_t str_size)
 {
     size_t size = 0;
     for (int i = 0; i < ff->fieldc; ++i)
     {
-        size += ftype_size_of(ff->offsets[i]);
+        if (ff->fields[i] == str_f)
+            size += str_size;
+        else
+            size += ftype_size_of(ff->offsets[i]);
     }
     return size;
 }
