@@ -95,17 +95,6 @@ tweet_cmp(Tweet *t1, Tweet *t2)
     return strcmp(t1->text->string, t2->text->string);
 }
 
-// typedef struct
-// {
-//     String *text;
-//     String *user;
-//     String *coordinates;
-//     int favorite_count;
-//     String *language;
-//     int retweet_count;
-//     long views_count;
-// } Tweet;
-
 void
 tweet_print(Tweet *t)
 {

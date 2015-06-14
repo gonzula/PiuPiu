@@ -28,7 +28,7 @@ fidx_create(FileManager *fman, FieldType ftype, int field_idx)
 }
 
 IndexEntry *
-idx_create(FieldType ftype, void *data, long int offset)
+idx_create(FieldType ftype, const void *data, long int offset)
 {
     IndexEntry *idx = alloc(sizeof(IndexEntry), idx_release);
     idx->ftype = ftype;
@@ -277,6 +277,23 @@ fidx_sort(FieldIndex *fidx)
     vector_sort(fidx->index, _idx_entry_sort);
 }
 
+int
+idx_eq(IndexEntry *e, const void *value)
+{
+    return ((e->ftype == str_f && str_eq((String *)value, e->str)) ||
+            (e->ftype != str_f && !memcmp(value, &e->v, ftype_size_of(e->ftype))));
+}
+
+int
+_offset_sort(const void *v1, const void *v2)
+{
+    long int *p1 = *(long int **)v1;
+    long int *p2 = *(long int **)v2;
+    return *p1 - *p2;
+}
+
+#define BIN_SEARCH 1
+
 Vector *
 fidx_search(FieldIndex *fidx, const void *value)
 {
@@ -286,21 +303,95 @@ fidx_search(FieldIndex *fidx, const void *value)
     }
 
     Vector *offset_vector = vector_init();
+    Vector *index = fidx->index;
+
+#if BIN_SEARCH
+    int inf = 0;
+    int sup = index->count-1;
+    int meio;
+    int found = -1;
+    IndexEntry *aux = idx_create(fidx->ftype, value, 0);
+
+    while (inf <= sup)
+    {
+        meio = (inf + sup)/2;
+        IndexEntry *this = index->objs[meio];
+        int result = idx_cmp(aux, this);
+        if (!result)
+        {
+            found = meio;
+            break;
+        }
+        else if (result < 0)
+            sup = meio-1;
+        else
+            inf = meio+1;
+    }
+
+
+    if (found >= 0)
+    {
+        IndexEntry *e = index->objs[found];
+        long int *entry_offset = alloc(sizeof(long int), NULL);
+        *entry_offset = e->offset;
+        vector_append(offset_vector, entry_offset);
+        release(entry_offset);
+
+        //left search
+        int left = found - 1;
+        while(left >= 0)
+        {
+            IndexEntry *e = index->objs[left];
+            if (!idx_cmp(aux, e))
+            {
+                long int *entry_offset = alloc(sizeof(long int), NULL);
+                *entry_offset = e->offset;
+                vector_append(offset_vector, entry_offset);
+                release(entry_offset);
+            }
+            else
+            {
+                break;
+            }
+            left--;
+        }
+        int right = found + 1;
+        while(right < index->count)
+        {
+            IndexEntry *e = index->objs[right];
+            if (!idx_cmp(aux, e))
+            {
+                long int *entry_offset = alloc(sizeof(long int), NULL);
+                *entry_offset = e->offset;
+                vector_append(offset_vector, entry_offset);
+                release(entry_offset);
+            }
+            else
+            {
+                break;
+            }
+            right++;
+        }
+    }
+    release (aux);
+#else
     for (int i = 0; i < fidx->index->count; i++)
     {
         IndexEntry *e = fidx->index->objs[i];
-        if ((e->ftype == str_f && str_eq((String *)value, e->str)) ||
-            (e->ftype != str_f && !memcmp(value, &e->v, ftype_size_of(e->ftype))))
+        if (idx_eq(e, value))
         {
             long int *entry_offset = alloc(sizeof(long int), NULL);
             *entry_offset = e->offset;
             vector_append(offset_vector, entry_offset);
             release(entry_offset);
         }
-
     }
+#endif
+    vector_sort(index, _offset_sort);
     return offset_vector;
 }
+
+
 
 void
 fidx_write_file(FieldIndex *fidx)
