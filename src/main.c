@@ -39,6 +39,10 @@ main(int argc, char *argv[])
             case 2:
             {
                 Vector *offset_vector = fman_list_all(fman);
+                if (!offset_vector->count)
+                {
+                    printf("Nenhum resultado\n");
+                }
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
@@ -59,8 +63,15 @@ main(int argc, char *argv[])
             break;
             case 3:
             {
-                system("clear");
                 Vector *offset_vector = fman_list_all(fman);
+                if (!offset_vector->count)
+                {
+                    printf("Nenhum resultado\n");
+                }
+                else
+                {
+                    system("clear");
+                }
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
@@ -69,10 +80,6 @@ main(int argc, char *argv[])
                     {
                         printf("@%3ld -> ", offset);
                         tweet_print(t);
-                    }
-                    else
-                    {
-                        printf("@%3ld -> deleted", offset);
                     }
                     printf("[pressione enter]\n");
                     String *blank = str_from_stdin();
@@ -90,6 +97,10 @@ main(int argc, char *argv[])
                 Vector *offset_vector = fman_search_by_field(fman, 1, user);
                 release(user);
 
+                if (!offset_vector->count)
+                {
+                    printf("Nenhum resultado\n");
+                }
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
@@ -109,6 +120,10 @@ main(int argc, char *argv[])
                 String *fav_s = str_from_stdin();
                 int fav = atoi(fav_s->string);
                 Vector *offset_vector = fman_search_by_field(fman, 3, &fav);
+                if (!offset_vector->count)
+                {
+                    printf("Nenhum resultado\n");
+                }
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
@@ -128,6 +143,10 @@ main(int argc, char *argv[])
                 printf("idioma: ");
                 String *language = str_from_stdin();
                 Vector *offset_vector = fman_search_by_field(fman, 4, language);
+                if (!offset_vector->count)
+                {
+                    printf("Nenhum resultado\n");
+                }
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
@@ -153,6 +172,10 @@ main(int argc, char *argv[])
                 Vector *fav_vector = fman_search_by_field(fman, 3, &fav);
 
                 Vector *offset_vector = fman_match_offsets(language_vector, fav_vector);
+                if (!offset_vector->count)
+                {
+                    printf("Nenhum resultado\n");
+                }
 
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
@@ -183,7 +206,10 @@ main(int argc, char *argv[])
 
                 Vector *offset_vector = fman_merge_offsets(language_vector, fav_vector);
 
-
+                if (!offset_vector->count)
+                {
+                    printf("Nenhum resultado\n");
+                }
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
@@ -208,35 +234,42 @@ main(int argc, char *argv[])
                 int fav = atoi(fav_s->string);
                 Vector *offset_vector = fman_search_by_field(fman, 3, &fav);
 
-                for (int i = 0; i < offset_vector->count; i++)
+                if (!offset_vector->count)
                 {
-                    Tweet *t = tweet_init();
-                    long int offset = *((long int *)offset_vector->objs[i]);
-                    if(fman_entry_at_offset(fman, offset, t))
+                    printf("Nenhum resultado\n");
+                }
+                else
+                {
+                    for (int i = 0; i < offset_vector->count; i++)
                     {
-                        printf("%d: ", i);
-                        tweet_print(t);
+                        Tweet *t = tweet_init();
+                        long int offset = *((long int *)offset_vector->objs[i]);
+                        if(fman_entry_at_offset(fman, offset, t))
+                        {
+                            printf("%d: ", i);
+                            tweet_print(t);
+                        }
+                        release(t);
                     }
-                    release(t);
+                    printf("Selecione o tweet a ser removido ou -1 para cancelar: ");
+                    String *choice = str_from_stdin();
+                    int ichoice = atoi(choice->string);
+                    release(choice);
+                    if (ichoice == -1)
+                    {
+                        release(offset_vector);
+                        release(fav_s);
+                        break;
+                    }
+                    if (ichoice < 0 || ichoice >= offset_vector->count)
+                    {
+                        printf("Opção inválida\n");
+                        release(offset_vector);
+                        release(fav_s);
+                        break;
+                    }
+                    fman_remove_entry_at_offset(fman, *(long int *)(offset_vector->objs[ichoice]));
                 }
-                printf("Selecione o tweet a ser removido ou -1 para cancelar: ");
-                String *choice = str_from_stdin();
-                int ichoice = atoi(choice->string);
-                release(choice);
-                if (ichoice == -1)
-                {
-                    release(offset_vector);
-                    release(fav_s);
-                    break;
-                }
-                if (ichoice < 0 || ichoice >= offset_vector->count)
-                {
-                    printf("Opção inválida\n");
-                    release(offset_vector);
-                    release(fav_s);
-                    break;
-                }
-                fman_remove_entry_at_offset(fman, *(long int *)(offset_vector->objs[ichoice]));
                 release(offset_vector);
                 release(fav_s);
             }
