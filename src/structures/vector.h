@@ -12,6 +12,7 @@ typedef struct
 
 Vector * vector_init();
 void vector_append(Vector *v, void *obj);
+void vector_remove(Vector *v, int idx);
 
 void vector_sort(Vector *v, int (*compar)(const void*,const void*));
 

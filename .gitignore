@@ -4,6 +4,8 @@
 *.obj
 *.elf
 
+*.idx
+*.lst
 *.bin
 
 # Precompiled Headers

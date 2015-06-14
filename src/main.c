@@ -1,47 +1,28 @@
+#include  <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "tweet.h"
 
-int
-_tweet_cmp(const void *v1, const void *v2)
-{
-    return tweet_cmp(*(Tweet **)v1, *(Tweet **)v2);
-}
+FileManager *fman;
 
-int
-menu()
-{
-    String *blank = str_from_stdin();
-    release(blank);
-    system("clear");
-    printf("Escolha uma opção:\n");
-    printf("\t1 - Inserir Tweets\n");
-    printf("\t2 - Listar Tweets\n");
-    printf("\t3 - Buscar Tweet por usuário\n");
-    printf("\t4 - Buscar Tweet por número de favoritos\n");
-    printf("\t5 - Buscar Tweet por idioma\n");
-    printf("\t6 - Buscar Tweet por número de favoritos e idioma\n");
-    printf("\t7 - Buscar Tweet por número de favoritos ou idioma\n");
-    printf("\n");
-    printf("\t0 - Sair\n");
-    String *choice = str_from_stdin();
-    int ichoice = atoi(choice->string);
-    release(choice);
-    return ichoice;
-}
+void INThandler(int);
+int menu();
+void good_bye();
 
 int
 main(int argc, char *argv[])
 {
+    signal(SIGINT, INThandler);
     FileFields *ff = tweet_filefields();
-    FileManager *fman = fman_create("/Users/gonzo/Desktop/PiuPiuFiles/PiuPiu", ff);
+    fman = fman_create("PiuPiu", ff);
     release(ff);
 
     int quit = 0;
     while(!quit)
     {
-        switch (menu())
+        int option = menu();
+        switch (option)
         {
             case 1:
             {
@@ -58,14 +39,19 @@ main(int argc, char *argv[])
             case 2:
             {
                 Vector *offset_vector = fman_list_all(fman);
-                printf("\nfound:%zu\n", offset_vector->count);
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
                     long int offset = *((long int *)offset_vector->objs[i]);
-                    fman_entry_at_offset(fman, offset, t);
-                    printf("@%3ld -> ", offset);
-                    tweet_print(t);
+                    if(fman_entry_at_offset(fman, offset, t))
+                    {
+                        printf("@%3ld -> ", offset);
+                        tweet_print(t);
+                    }
+                    else
+                    {
+                        printf("@%3ld -> deleted", offset);
+                    }
                     release(t);
                 }
                 release(offset_vector);
@@ -73,17 +59,25 @@ main(int argc, char *argv[])
             break;
             case 3:
             {
-                printf("Usuário: ");
-                String *user = str_from_stdin();
-                Vector *offset_vector = fman_search_by_field(fman, 1, user);
-                release(user);
-                printf("\nfound:%zu\n", offset_vector->count);
+                system("clear");
+                Vector *offset_vector = fman_list_all(fman);
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
                     long int offset = *((long int *)offset_vector->objs[i]);
-                    fman_entry_at_offset(fman, offset, t);
-                    tweet_print(t);
+                    if(fman_entry_at_offset(fman, offset, t))
+                    {
+                        printf("@%3ld -> ", offset);
+                        tweet_print(t);
+                    }
+                    else
+                    {
+                        printf("@%3ld -> deleted", offset);
+                    }
+                    printf("[pressione enter]\n");
+                    String *blank = str_from_stdin();
+                    release(blank);
+                    system("clear");
                     release(t);
                 }
                 release(offset_vector);
@@ -91,67 +85,61 @@ main(int argc, char *argv[])
             break;
             case 4:
             {
-                printf("Número de favoritos: ");
-                String *fav_s = str_from_stdin();
-                int fav = atoi(fav_s->string);
-                Vector *offset_vector = fman_search_by_field(fman, 3, &fav);
-                printf("\nfound:%zu\n", offset_vector->count);
+                printf("Usuário: ");
+                String *user = str_from_stdin();
+                Vector *offset_vector = fman_search_by_field(fman, 1, user);
+                release(user);
+
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
                     long int offset = *((long int *)offset_vector->objs[i]);
-                    fman_entry_at_offset(fman, offset, t);
-                    tweet_print(t);
+                    if(fman_entry_at_offset(fman, offset, t))
+                    {
+                        tweet_print(t);
+                    }
                     release(t);
                 }
                 release(offset_vector);
-                release(fav_s);
             }
             break;
             case 5:
             {
-                printf("idioma: ");
-                String *language = str_from_stdin();
-                Vector *offset_vector = fman_search_by_field(fman, 4, language);
-                printf("\nfound:%zu\n", offset_vector->count);
+                printf("Número de favoritos: ");
+                String *fav_s = str_from_stdin();
+                int fav = atoi(fav_s->string);
+                Vector *offset_vector = fman_search_by_field(fman, 3, &fav);
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
                     long int offset = *((long int *)offset_vector->objs[i]);
-                    fman_entry_at_offset(fman, offset, t);
-                    tweet_print(t);
+                    if(fman_entry_at_offset(fman, offset, t))
+                    {
+                        tweet_print(t);
+                    }
                     release(t);
                 }
                 release(offset_vector);
-                release(language);
+                release(fav_s);
             }
             break;
             case 6:
             {
-                printf("Número de favoritos: ");
-                String *fav_s = str_from_stdin();
-                int fav = atoi(fav_s->string);
                 printf("idioma: ");
                 String *language = str_from_stdin();
-                Vector *language_vector = fman_search_by_field(fman, 4, language);
-                Vector *fav_vector = fman_search_by_field(fman, 3, &fav);
-
-                Vector *offset_vector = fman_match_offsets(language_vector, fav_vector);
-
-                printf("\nfound:%zu\n", offset_vector->count);
+                Vector *offset_vector = fman_search_by_field(fman, 4, language);
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
                     long int offset = *((long int *)offset_vector->objs[i]);
-                    fman_entry_at_offset(fman, offset, t);
-                    tweet_print(t);
+                    if (fman_entry_at_offset(fman, offset, t))
+                    {
+                        tweet_print(t);
+                    }
                     release(t);
                 }
                 release(offset_vector);
-                release(language_vector);
-                release(fav_vector);
                 release(language);
-                release(fav_s);
             }
             break;
             case 7:
@@ -164,15 +152,16 @@ main(int argc, char *argv[])
                 Vector *language_vector = fman_search_by_field(fman, 4, language);
                 Vector *fav_vector = fman_search_by_field(fman, 3, &fav);
 
-                Vector *offset_vector = fman_merge_offsets(language_vector, fav_vector);
+                Vector *offset_vector = fman_match_offsets(language_vector, fav_vector);
 
-                printf("\nfound:%zu\n", offset_vector->count);
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
                     long int offset = *((long int *)offset_vector->objs[i]);
-                    fman_entry_at_offset(fman, offset, t);
-                    tweet_print(t);
+                    if(fman_entry_at_offset(fman, offset, t))
+                    {
+                        tweet_print(t);
+                    }
                     release(t);
                 }
                 release(offset_vector);
@@ -182,7 +171,76 @@ main(int argc, char *argv[])
                 release(fav_s);
             }
             break;
+            case 8:
+            {
+                printf("Número de favoritos: ");
+                String *fav_s = str_from_stdin();
+                int fav = atoi(fav_s->string);
+                printf("idioma: ");
+                String *language = str_from_stdin();
+                Vector *language_vector = fman_search_by_field(fman, 4, language);
+                Vector *fav_vector = fman_search_by_field(fman, 3, &fav);
 
+                Vector *offset_vector = fman_merge_offsets(language_vector, fav_vector);
+
+
+                for (int i = 0; i < offset_vector->count; ++i)
+                {
+                    Tweet *t = tweet_init();
+                    long int offset = *((long int *)offset_vector->objs[i]);
+                    if (fman_entry_at_offset(fman, offset, t))
+                    {
+                        tweet_print(t);
+                    }
+                    release(t);
+                }
+                release(offset_vector);
+                release(language_vector);
+                release(fav_vector);
+                release(language);
+                release(fav_s);
+            }
+            break;
+            case 9:
+            {
+                printf("Número de favoritos: ");
+                String *fav_s = str_from_stdin();
+                int fav = atoi(fav_s->string);
+                Vector *offset_vector = fman_search_by_field(fman, 3, &fav);
+
+                for (int i = 0; i < offset_vector->count; i++)
+                {
+                    Tweet *t = tweet_init();
+                    long int offset = *((long int *)offset_vector->objs[i]);
+                    if(fman_entry_at_offset(fman, offset, t))
+                    {
+                        printf("%d: ", i);
+                        tweet_print(t);
+                    }
+                    release(t);
+                }
+                printf("Selecione o tweet a ser removido ou -1 para cancelar: ");
+                String *choice = str_from_stdin();
+                int ichoice = atoi(choice->string);
+                release(choice);
+                if (ichoice == -1)
+                {
+                    release(offset_vector);
+                    release(fav_s);
+                    break;
+                }
+                if (ichoice < 0 || ichoice >= offset_vector->count)
+                {
+                    printf("Opção inválida\n");
+                    release(offset_vector);
+                    release(fav_s);
+                    break;
+                }
+                fman_remove_entry_at_offset(fman, *(long int *)(offset_vector->objs[ichoice]));
+                release(offset_vector);
+                release(fav_s);
+            }
+            break;
 
             case 0:
                 quit = 1;
@@ -192,7 +250,50 @@ main(int argc, char *argv[])
                 break;
         }
     }
+    good_bye();
+    return EXIT_SUCCESS;
+}
+
+int
+menu()
+{
+    static int first = 1;
+    if (!first)
+    {
+        printf("[pressione enter]\n");
+        String *blank = str_from_stdin();
+        release(blank);
+    }
+    first = 0;
+    system("clear");
+    printf("Escolha uma opção:\n");
+    printf("\t1 - Inserir Tweets\n");
+    printf("\t2 - Listar Tweets\n");
+    printf("\t3 - Listar Tweets um por vez\n");
+    printf("\t4 - Buscar Tweet por usuário\n");
+    printf("\t5 - Buscar Tweet por número de favoritos\n");
+    printf("\t6 - Buscar Tweet por idioma\n");
+    printf("\t7 - Buscar Tweet por número de favoritos e idioma\n");
+    printf("\t8 - Buscar Tweet por número de favoritos ou idioma\n");
+    printf("\t9 - Remover Tweet por número de favoritos\n");
+    printf("\n");
+    printf("\t0 - Sair\n");
+    String *choice = str_from_stdin();
+    int ichoice = atoi(choice->string);
+    release(choice);
+    return ichoice;
+}
+
+void  INThandler(int sig)
+{
+     signal(sig, SIG_IGN);
+     good_bye();
+}
+
+void
+good_bye()
+{
     release(fman);
     printf("\nGood bye\n\n");
-    return EXIT_SUCCESS;
+    exit(0);
 }

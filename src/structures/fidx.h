@@ -33,8 +33,12 @@ typedef struct
     FileManager *fman;
 } FieldIndex;
 
+IndexEntry *idx_create(FieldType ftype, void *data, long int offset);
+
 FieldIndex *fidx_create(FileManager *fman, FieldType ftype, int field_idx);
 void fidx_create_index(FieldIndex *fidx);
+
+void fidx_sort(FieldIndex *fidx);
 
 Vector *fidx_search(FieldIndex *fidx, const void *value);
 

@@ -70,20 +70,19 @@ ffields_print(FileFields *ff)
 size_t
 ftype_size_of(FieldType ft)
 {
-    size_t field_size = 0;
     switch (ft)
     {
-        case str_f:    field_size = sizeof(char);          break;
-        case int_f:    field_size = sizeof(int);           break;
-        case uint_f:   field_size = sizeof(unsigned int);  break;
-        case long_f:   field_size = sizeof(long);          break;
-        case ulong_f:  field_size = sizeof(unsigned long); break;
-        case float_f:  field_size = sizeof(float);         break;
-        case double_f: field_size = sizeof(double);        break;
-        case char_f:   field_size = sizeof(char);          break;
-        case uchar_f:  field_size = sizeof(unsigned char); break;
+        case str_f:    return sizeof(char);
+        case int_f:    return sizeof(int);
+        case uint_f:   return sizeof(unsigned int);
+        case long_f:   return sizeof(long);
+        case ulong_f:  return sizeof(unsigned long);
+        case float_f:  return sizeof(float);
+        case double_f: return sizeof(double);
+        case char_f:   return sizeof(char);
+        case uchar_f:  return sizeof(unsigned char);
     }
-    return field_size;
+    return 0;
 }
 
 size_t
@@ -93,9 +92,13 @@ ffields_size(FileFields *ff, size_t str_size)
     for (int i = 0; i < ff->fieldc; ++i)
     {
         if (ff->fields[i] == str_f)
+        {
             size += str_size;
+        }
         else
-            size += ftype_size_of(ff->offsets[i]);
+        {
+            size += ftype_size_of(ff->fields[i]);
+        }
     }
     return size;
 }

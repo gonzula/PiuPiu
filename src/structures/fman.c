@@ -54,12 +54,12 @@ void
 fman_inc_entryc(FileManager *fman, int amnt)
 {
     fman->entryc += amnt;
-    if (fman->entryc >= 10)
+    for (int i = 0; i < fman->indexes->count; i++)
     {
-        for (int i = 0; i < fman->indexes->count; i++)
+        FieldIndex *fidx = fman->indexes->objs[i];
+        if (fman->entryc >= 10)
         {
-            FieldIndex *e = fman->indexes->objs[i];
-            fidx_create_index(e);
+            fidx_create_index(fidx);
         }
     }
 }
@@ -67,38 +67,80 @@ fman_inc_entryc(FileManager *fman, int amnt)
 long int
 fman_free_offset_for_size(FileManager *fman, int size)
 {
+    size += sizeof(size);  // adding entry_size
     fseek(fman->fp, 0, SEEK_SET);
     long int next_entry = -1;
-    fread(&next_entry, sizeof(next_entry), 1, fman->fp);
-    long int best_fit = 0;
-    size_t best_fit_size = 0xFFFF;
-    size_t min_entry_size = ffields_size(fman->ff, sizeof(char));
-    while(next_entry != -1 && feof(fman->fp))
+    fread(&next_entry, sizeof(next_entry), 1, fman->fp); //stack top
+
+    long int previous_stack_top_offset = 0;
+    long int previous_best_stack_top_offset = 0;
+    long int next_stack_top_offset = -1;
+    long int best_fit_offset = 0;
+
+
+    int best_fit_size = 0xFFFF; //inf
+    int fragment = 0;
+
+    size_t min_entry_size = ffields_size(fman->ff, sizeof(char) * 2) + sizeof(int);//entry size
+    while (next_entry != -1)
     {
-        fseek(fman->fp, next_entry, SEEK_SET);
+        int space_left = 0;
+        fseek(fman->fp, next_entry - sizeof(int), SEEK_SET);
         int this_entry_size;
         fread(&this_entry_size, sizeof(this_entry_size), 1, fman->fp);
         this_entry_size = -this_entry_size;
-        if (this_entry_size <= 0)
+        this_entry_size += sizeof(this_entry_size);
+        space_left = this_entry_size - size;
+        if (this_entry_size <= 0) //something went wrong :(
         {
             break;
         }
-        else if (this_entry_size == size) //best-fit
+        else if (space_left == 0) //exactly-fit
         {
-            best_fit = ftell(fman->fp);
+            best_fit_offset = ftell(fman->fp);
+            fread(&next_stack_top_offset, sizeof(next_stack_top_offset), 1, fman->fp);
+            previous_best_stack_top_offset = previous_stack_top_offset;
+            fragment = 0;
             break;
         }
-        else if (this_entry_size - min_entry_size > 0 &&
-                 this_entry_size - min_entry_size < best_fit_size)
+        else if (space_left > 0 &&
+                 space_left > min_entry_size && //fits another entry
+                 space_left < best_fit_size)    //
         {
-            best_fit_size = this_entry_size - min_entry_size;
-            best_fit = ftell(fman->fp);
+            fragment = 1;
+            best_fit_size = space_left;
+            best_fit_offset = ftell(fman->fp);
+            fread(&next_stack_top_offset, sizeof(next_stack_top_offset), 1, fman->fp);
+            fseek(fman->fp, best_fit_offset, SEEK_SET);
+            previous_best_stack_top_offset = previous_stack_top_offset;
         }
+        previous_stack_top_offset = next_entry;
+        fseek(fman->fp, next_entry, SEEK_SET);
+        fread(&next_entry, sizeof(next_entry), 1, fman->fp);
     }
-    if (best_fit)
-        return best_fit;
+
+    if (best_fit_offset)
+    {
+        if (fragment)
+        {
+            fseek(fman->fp, best_fit_offset + size - sizeof(int), SEEK_SET);
+            best_fit_size -= sizeof(int);
+            best_fit_size = -best_fit_size;
+            fwrite(&best_fit_size, sizeof(best_fit_size), 1, fman->fp);
+            long int fragment_offset = ftell(fman->fp);
+            fwrite(&next_stack_top_offset, sizeof(next_stack_top_offset), 1, fman->fp);
+            fseek(fman->fp, previous_best_stack_top_offset, SEEK_SET);
+            fwrite(&fragment_offset, sizeof(fragment_offset), 1, fman->fp);
+        }
+        else
+        {
+            fseek(fman->fp, previous_best_stack_top_offset, SEEK_SET);
+            fwrite(&next_stack_top_offset, sizeof(next_stack_top_offset), 1, fman->fp);
+        }
+        return best_fit_offset;
+    }
     fseek(fman->fp, 0, SEEK_END);
-    return ftell(fman->fp);
+    return ftell(fman->fp) + sizeof(int);
 }
 
 Vector *
@@ -131,10 +173,16 @@ fman_list_all(FileManager *fman)
     return offset_vector;
 }
 
-void
+int
 fman_entry_at_offset(FileManager *fman, long int offset, void *entry /* inout */)
 {
-    fseek(fman->fp, offset, SEEK_SET);
+    fseek(fman->fp, offset - sizeof(int), SEEK_SET);
+    int entry_size = 0;
+    fread(&entry_size, sizeof(entry_size), 1, fman->fp);
+    if (entry_size < 0)
+    {
+        return 0;
+    }
     for (int i = 0; i < fman->ff->fieldc; i++)
     {
         void *field = entry + fman->ff->offsets[i];
@@ -151,6 +199,7 @@ fman_entry_at_offset(FileManager *fman, long int offset, void *entry /* inout */
             memcpy(field, this_value, field_size);
         }
     }
+    return 1;
 }
 
 Vector *
@@ -161,7 +210,6 @@ fman_search_by_field(FileManager *fman,
     for (int i = 0; i < fman->indexes->count; i++)
     {
         FieldIndex *fidx = fman->indexes->objs[i];
-        printf("checking for field_idx:%d \n", fidx->field_idx);
         if (fidx->field_idx == field_idx)
         {
             offset_vector = fidx_search(fidx, value);
@@ -170,7 +218,6 @@ fman_search_by_field(FileManager *fman,
 
     if (offset_vector)
     {
-        printf("used cache\n");
         return offset_vector;
     }
         //else no index, sequential search
@@ -289,9 +336,9 @@ fman_add_entry(FileManager *fman, void *o)
     long int offset = 0;
     offset = fman_free_offset_for_size(
         fman,
-        entry_size + sizeof(entry_size) /* entry_size itself */);
+        entry_size);
     fseek(fman->fp,
-    offset,
+    offset - sizeof(entry_size),
     SEEK_SET);
     fwrite(&entry_size, sizeof(entry_size), 1, fman->fp);
     for (int j = 0; j < fman->ff->fieldc; j++)
@@ -355,7 +402,66 @@ fman_add_entry(FileManager *fman, void *o)
             break;
         }
     }
+    for (int i = 0; i < fman->indexes->count; i++)
+    {
+        FieldIndex *fidx = fman->indexes->objs[i];
+        void *field = o + fidx->fman->ff->offsets[fidx->field_idx];
+        if (fidx->ftype == str_f)
+        {
+            String *str = *(String **)field;
+            IndexEntry *e = idx_create(fidx->ftype, str, offset);
+            vector_append(fidx->index, e);
+            release(e);
+        }
+        else
+        {
+            IndexEntry *e = idx_create(fidx->ftype, field, offset);
+            vector_append(fidx->index, e);
+            release(e);
+        }
+        fidx_sort(fidx);
+    }
     fman_inc_entryc(fman, 1);
+}
+
+void
+fman_remove_entry_at_offset(FileManager *fman, long int offset)
+{
+    fseek(fman->fp, 0, SEEK_SET);
+    long int stack_top = 0;
+    fread(&stack_top, sizeof(stack_top), 1, fman->fp);
+    fseek(fman->fp, offset - sizeof(int), SEEK_SET);
+    int this_entry_size = 0;
+    fread(&this_entry_size, sizeof(this_entry_size), 1, fman->fp);
+    if(this_entry_size < 0)//already removed
+    {
+        return;
+    }
+    this_entry_size = -this_entry_size;
+    fseek(fman->fp, offset - sizeof(int), SEEK_SET);
+    fwrite(&this_entry_size, sizeof(this_entry_size), 1, fman->fp);
+    fwrite(&stack_top, sizeof(stack_top), 1, fman->fp);
+    fseek(fman->fp, 0, SEEK_SET);
+    fwrite(&offset, sizeof(offset), 1, fman->fp);
+
+    for (int i = 0; i < fman->indexes->count; i++)
+    {
+        FieldIndex *fidx = fman->indexes->objs[i];
+        if (fidx->index)
+        {
+            for (int j = 0; j < fidx->index->count; j++)
+            {
+                IndexEntry *e = fidx->index->objs[j];
+                if (e->offset == offset)
+                {
+                    vector_remove(fidx->index, j);
+                }
+            }
+        }
+        fidx_sort(fidx);
+    }
+
+    fman_inc_entryc(fman, -1);
 }
 
 int
@@ -389,6 +495,15 @@ fman_merge_offsets(Vector *v1, Vector *v2)
             k++;
         }
     }
+
+    for (; i < v1->count; i++)                    //
+    {                                             //
+        vector_append(result, v1->objs[i]);       //
+    }                                             //
+    for (; k < v2->count; k++)                    // left overs
+    {                                             //
+        vector_append(result, v2->objs[k]);       //
+    }                                             //
     return result;
 }
 

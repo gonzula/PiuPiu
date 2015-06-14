@@ -33,18 +33,20 @@ idx_create(FieldType ftype, void *data, long int offset)
     IndexEntry *idx = alloc(sizeof(IndexEntry), idx_release);
     idx->ftype = ftype;
     idx->offset = offset;
+    // printf("creating index: ");
     switch(ftype)
     {
-        case str_f:    idx->str = ((String *)data);          break;
-        case int_f:    idx->i   = *((int *)data);           break;
-        case uint_f:   idx->ui  = *((unsigned int *)data);  break;
-        case long_f:   idx->l   = *((long *)data);          break;
-        case ulong_f:  idx->ul  = *((unsigned long *)data); break;
-        case float_f:  idx->f   = *((float *)data);         break;
-        case double_f: idx->lf  = *((double *)data);        break;
-        case char_f:   idx->c   = *((char *)data);          break;
-        case uchar_f:  idx->uc  = *((unsigned char *)data); break;
+        case str_f:    idx->str = ((String *)data);         /*printf("%s", idx->str->string); */ break;
+        case int_f:    idx->i   = *((int *)data);           /*printf("%i", idx->i);           */ break;
+        case uint_f:   idx->ui  = *((unsigned int *)data);  /*printf("%u", idx->ui);          */ break;
+        case long_f:   idx->l   = *((long *)data);          /*printf("%ld", idx->l);          */ break;
+        case ulong_f:  idx->ul  = *((unsigned long *)data); /*printf("%zu", idx->ul);         */ break;
+        case float_f:  idx->f   = *((float *)data);         /*printf("%f", idx->f );          */ break;
+        case double_f: idx->lf  = *((double *)data);        /*printf("%lf", idx->lf);         */ break;
+        case char_f:   idx->c   = *((char *)data);          /*printf("%c", idx->c );          */ break;
+        case uchar_f:  idx->uc  = *((unsigned char *)data); /*printf("%c", idx->uc);          */ break;
     }
+    // printf(" @ 0x%ld\n", offset);
     if (ftype == str_f)
     {
         retain(idx->str);
@@ -56,18 +58,18 @@ void
 fidx_create_from_data_file(FieldIndex *fidx)
 {
     Vector *offset_vector = fman_list_all(fidx->fman);
+    release(fidx->index);
     fidx->index = vector_init();
     for (int i = 0; i < offset_vector->count; ++i)
     {
         size_t entry_size = ffields_size(fidx->fman->ff, sizeof(String *));
-        void *entry = malloc(entry_size);
+        void *entry = malloc(entry_size * 2);
         long int offset = *((long int *)offset_vector->objs[i]);
         fman_entry_at_offset(fidx->fman, offset, entry);
         void *field = entry + fidx->fman->ff->offsets[fidx->field_idx];
         if (fidx->ftype == str_f)
         {
             String *str = *(String **)field;
-            retain(str);
             IndexEntry *e = idx_create(fidx->ftype, str, offset);
             vector_append(fidx->index, e);
             release(e);
@@ -77,6 +79,15 @@ fidx_create_from_data_file(FieldIndex *fidx)
             IndexEntry *e = idx_create(fidx->ftype, field, offset);
             vector_append(fidx->index, e);
             release(e);
+        }
+        for (int i = 0; i < fidx->fman->ff->fieldc; i++)
+        {
+            if (fidx->fman->ff->fields[i] == str_f)
+            {
+                void *field = entry + fidx->fman->ff->offsets[i];
+                String *str = *(String **)field;
+                release(str);
+            }
         }
         free(entry);
     }
@@ -88,8 +99,11 @@ void
 fidx_create_index(FieldIndex *fidx)
 {
     if (fidx->index) //index already exists
+    {
         return;
-    fidx->index = vector_init();
+        // release(fidx->index);
+        // fidx->index = NULL;
+    }
     String *f1_name = str_create(fidx->fman->db_name->string);
     str_append_char(f1_name, '.');
     str_append_char(f1_name, fidx->field_idx+'0');
@@ -120,6 +134,8 @@ fidx_create_index(FieldIndex *fidx)
         return;
     }
 
+    release(fidx->index);
+    fidx->index = vector_init();
     Vector *index = fidx->index;
     size_t field_size = ftype_size_of(fidx->ftype);
     while(!feof(f1))
@@ -273,28 +289,14 @@ fidx_search(FieldIndex *fidx, const void *value)
     for (int i = 0; i < fidx->index->count; i++)
     {
         IndexEntry *e = fidx->index->objs[i];
-        if (e->ftype == int_f)
-
-        {
-            int i1 = *(int *)value;
-            printf("%d == %d ->", i1, e->i);
-        }
-        if (e->ftype == str_f)
-        {
-            String *s1 = (String *)value;
-            printf("%s == %s ->", s1->string, e->str->string);
-        }
         if ((e->ftype == str_f && str_eq((String *)value, e->str)) ||
             (e->ftype != str_f && !memcmp(value, &e->v, ftype_size_of(e->ftype))))
         {
-            printf("yes\n");
             long int *entry_offset = alloc(sizeof(long int), NULL);
             *entry_offset = e->offset;
             vector_append(offset_vector, entry_offset);
             release(entry_offset);
-
         }
-        else printf("no\n");
 
     }
     return offset_vector;

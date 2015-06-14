@@ -95,11 +95,30 @@ tweet_cmp(Tweet *t1, Tweet *t2)
     return strcmp(t1->text->string, t2->text->string);
 }
 
+// typedef struct
+// {
+//     String *text;
+//     String *user;
+//     String *coordinates;
+//     int favorite_count;
+//     String *language;
+//     int retweet_count;
+//     long views_count;
+// } Tweet;
+
 void
 tweet_print(Tweet *t)
 {
     // printf("%s: \"%s\" @ %s (%i favs in %s)\n", t->user->string, t->text->string, t->coordinates->string, t->favorite_count, t->language->string);
-    printf("%s: (%i favs in %s)\n", t->user->string, t->favorite_count, t->language->string);
+    // printf("%s: (%i favs in %s)\n", t->user->string, t->favorite_count, t->language->string);
+    printf("%s|%s|%s|%d|%s|%d|%ld\n",
+     t->user->string,
+     t->text->string,
+     t->coordinates->string,
+     t->favorite_count,
+     t->language->string,
+     t->retweet_count,
+     t->views_count);
 }
 
 
