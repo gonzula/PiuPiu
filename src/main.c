@@ -266,6 +266,9 @@ main(int argc, char *argv[])
                         release(t);
                     }
                     String *separator = tweet_separator();
+                    String *header = tweet_header();
+                    printf("%s\n", header->string);
+                    release(header);
                     for (int i = 0; i < tweet_vector->count; i++)
                     {
                         printf("%d:\n", i);

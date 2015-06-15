@@ -202,6 +202,64 @@ tweet_separator()
     str_append(separator, "+");
     return separator;
 }
+String *
+tweet_header()
+{
+    int width = _tty_width() / 7 -2;
+    String *separator = tweet_separator();
+    String *header = str_init();
+    str_append(header, separator->string);
+    str_append(header, "\n");
+
+    str_append(header, "|");
+    String *s;
+    s = str_create("Usuário");
+    str_center(s, width);
+    str_append(header, s->string);
+    release(s);
+
+    str_append(header, "|");
+    s = str_create("Texto");
+    str_center(s, width);
+    str_append(header, s->string);
+    release(s);
+
+    str_append(header, "|");
+    s = str_create("Coords.");
+    str_center(s, width);
+    str_append(header, s->string);
+    release(s);
+
+    str_append(header, "|");
+    s = str_create("Fav count");
+    str_center(s, width);
+    str_append(header, s->string);
+    release(s);
+
+    str_append(header, "|");
+    s = str_create("Língua");
+    str_center(s, width);
+    str_append(header, s->string);
+    release(s);
+
+    str_append(header, "|");
+    s = str_create("Retweets");
+    str_center(s, width);
+    str_append(header, s->string);
+    release(s);
+
+    str_append(header, "|");
+    s = str_create("Views");
+    str_center(s, width);
+    str_append(header, s->string);
+    release(s);
+    str_append(header, "|\n");
+
+    str_append(header, separator->string);
+    str_append(header, "\n");
+    release(separator);
+    return header;
+}
 
 void
 tweet_print_many_waiting(Vector *v)
@@ -209,8 +267,9 @@ tweet_print_many_waiting(Vector *v)
     for (int i = 0; i < v->count; ++i)
     {
         String *separator = tweet_separator();
+        String *header = tweet_header();
         printf("%d de %zu\n", i+1, v->count);
-        printf("%s\n", separator->string);
+        printf("%s", header->string);
         Tweet *t = v->objs[i];
         tweet_print(t);
         printf("%s\n", separator->string);
@@ -226,6 +285,7 @@ tweet_print_many_waiting(Vector *v)
         release(blank);
         system("clear");
         release(separator);
+        release(header);
     }
 }
 
@@ -235,16 +295,19 @@ void
 tweet_print_many(Vector *v)
 {
     String *separator = tweet_separator();
-
+    String *header = tweet_header();
+    printf("%s", header->string);
     for (int i = 0; i < v->count; i++)
     {
-        printf("%s\n", separator->string);
+        if (i)
+            printf("%s\n", separator->string);
         Tweet *t = v->objs[i];
         tweet_print(t);
     }
     printf("%s\n", separator->string);
 
     release(separator);
+    release(header);
 }
 
 
