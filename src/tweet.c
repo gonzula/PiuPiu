@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 #include "tweet.h"
 
@@ -95,58 +97,58 @@ tweet_cmp(Tweet *t1, Tweet *t2)
     return strcmp(t1->text->string, t2->text->string);
 }
 
+int
+_tty_width()
+{
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+
+    return w.ws_col;
+}
+
 void
 tweet_print(Tweet *t)
 {
-    // printf("%s: \"%s\" @ %s (%i favs in %s)\n", t->user->string, t->text->string, t->coordinates->string, t->favorite_count, t->language->string);
-    // printf("%s: (%i favs in %s)\n", t->user->string, t->favorite_count, t->language->string);
-    // printf("%s|%s|%s|%d|%s|%d|%ld\n",
-    //  t->user->string,
-    //  t->text->string,
-    //  t->coordinates->string,
-    //  t->favorite_count,
-    //  t->language->string,
-    //  t->retweet_count,
-    //  t->views_count);
+    int width = _tty_width() / 7 -2;
 
     Vector *columns = vector_init();
     {
-        Vector *lines = str_wrap(t->user, 22);
+        Vector *lines = str_wrap(t->user, width);
         vector_append(columns, lines);
         release(lines);
     }
     {
-        Vector *lines = str_wrap(t->text, 22);
+        Vector *lines = str_wrap(t->text, width);
         vector_append(columns, lines);
         release(lines);
     }
     {
-        Vector *lines = str_wrap(t->coordinates, 22);
+        Vector *lines = str_wrap(t->coordinates, width);
         vector_append(columns, lines);
         release(lines);
     }
     {
         String *s = str_from_int(t->favorite_count);
-        Vector *v = str_wrap(s, 22);
+        Vector *v = str_wrap(s, width);
         release(s);
         vector_append(columns, v);
         release(v);
     }
     {
-        Vector *lines = str_wrap(t->language, 22);
+        Vector *lines = str_wrap(t->language, width);
         vector_append(columns, lines);
         release(lines);
     }
     {
         String *s = str_from_int(t->retweet_count);
-        Vector *v = str_wrap(s, 22);
+        Vector *v = str_wrap(s, width);
         release(s);
         vector_append(columns, v);
         release(v);
     }
     {
         String *s = str_from_long(t->views_count);
-        Vector *v = str_wrap(s, 22);
+        Vector *v = str_wrap(s, width);
         release(s);
         vector_append(columns, v);
         release(v);
@@ -165,7 +167,13 @@ tweet_print(Tweet *t)
         {
             Vector *lines = columns->objs[j];
             if (i >= lines->count)
-                printf("|                      ");
+            {
+                printf("|");
+                for (int k = 0; k < width; k++)
+                {
+                    printf(" ");
+                }
+            }
             else
             {
                 String *s = lines->objs[i];
@@ -181,10 +189,15 @@ tweet_print(Tweet *t)
 String *
 tweet_separator()
 {
+    int width = _tty_width() / 7 -2;
     String *separator = str_init();
     for (int i = 0; i < 7; i++)
     {
-        str_append(separator, "+----------------------");
+        str_append(separator, "+");
+        for (int j = 0; j < width; j++)
+        {
+            str_append(separator, "-");
+        }
     }
     str_append(separator, "+");
     return separator;

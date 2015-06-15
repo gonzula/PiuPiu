@@ -92,6 +92,11 @@ Vector *
 str_wrap(String *str, int width)
 {
     Vector *lines = vector_init();
+    if (width == 0)
+    {
+        vector_append(lines, str);
+        return lines;
+    }
     for (int i = 0; i < str->len; i++)
     {
         int line_number = i/width;
