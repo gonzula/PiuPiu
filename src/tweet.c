@@ -214,8 +214,15 @@ tweet_print_many_waiting(Vector *v)
         Tweet *t = v->objs[i];
         tweet_print(t);
         printf("%s\n", separator->string);
-        printf("[pressione enter]\n");
+        printf("[pressione enter para continuar ou q para parar]\n");
         String *blank = str_from_stdin();
+        if (strcmp("q", blank->string) ||
+            strcmp("Q", blank->string) ||)
+        {
+            release(separator);
+            release(blank);
+            break;
+        }
         release(blank);
         system("clear");
         release(separator);
