@@ -206,9 +206,9 @@ tweet_separator()
 void
 tweet_print_many_waiting(Vector *v)
 {
-    String *separator = tweet_separator();
     for (int i = 0; i < v->count; ++i)
     {
+        String *separator = tweet_separator();
         printf("%d de %zu\n", i+1, v->count);
         printf("%s\n", separator->string);
         Tweet *t = v->objs[i];
@@ -218,8 +218,8 @@ tweet_print_many_waiting(Vector *v)
         String *blank = str_from_stdin();
         release(blank);
         system("clear");
+        release(separator);
     }
-    release(separator);
 }
 
 
