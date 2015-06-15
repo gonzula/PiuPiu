@@ -177,6 +177,14 @@ tweet_print(Tweet *t)
             else
             {
                 String *s = lines->objs[i];
+                if (j == 3 || j == 5 || j == 6)
+                {
+                    str_rjust(s, width);
+                }
+                else
+                {
+                    str_ljust(s, width);
+                }
                 printf("|%s", s->string);
             }
         }

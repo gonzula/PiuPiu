@@ -34,6 +34,8 @@ Vector *str_wrap(String *str, int width);
 void str_append(String *str, const char * toAppend);
 void str_append_char(String *str, const unsigned char c);
 void str_center(String *str, int size);
+void str_rjust(String *str, int size);
+void str_ljust(String *str, int size);
 int str_unicode_len(String *str);
 
 

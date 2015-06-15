@@ -56,6 +56,58 @@ str_from_stdin()
 }
 
 void
+str_rjust(String *str, int size)
+{
+    int unicodeLen = str_unicode_len(str);
+    int space_amnt = size - unicodeLen;
+    if (space_amnt <= 0) return;
+
+    int newSize = space_amnt + str->len;
+    char *newString = malloc(sizeof(char) * (newSize + 1));
+
+    for (int i = 0; i < space_amnt; i++)
+    {
+        newString[i] = ' ';
+    }
+    for (int i = space_amnt, j = 0; j < str->len; i++, j++)
+    {
+        newString[i] = str->string[j];
+    }
+    free(str->string);
+    str->string = newString;
+    str->len = newSize;
+    str->bufferSize = newSize + 1;
+    newString[newSize] = 0;
+}
+
+void
+str_ljust(String *str, int size)
+{
+    int unicodeLen = str_unicode_len(str);
+    int space_amnt = size - unicodeLen;
+    if (space_amnt <= 0) return;
+
+    int newSize = space_amnt + str->len;
+    char *newString = malloc(sizeof(char) * (newSize + 1));
+
+    for (int i = 0; i < str->len; i++)
+    {
+        newString[i] = str->string[i];
+    }
+
+    for (int i = 0, j = str->len; i < space_amnt; i++, j++)
+    {
+        newString[j] = ' ';
+    }
+
+    free(str->string);
+    str->string = newString;
+    str->len = newSize;
+    str->bufferSize = newSize + 1;
+    newString[newSize] = 0;
+}
+
+void
 str_center(String *str, int size) //   " asd  "
 {
     int unicodeLen = str_unicode_len(str);
@@ -92,7 +144,7 @@ Vector *
 str_wrap(String *str, int width)
 {
     Vector *lines = vector_init();
-    if (width == 0)
+    if (width == 0 )
     {
         vector_append(lines, str);
         return lines;
@@ -130,14 +182,14 @@ str_wrap(String *str, int width)
         str_append_char(s, c);
     }
 
-    String *last_line = lines->objs[lines->count - 1];
-    if (last_line)
-    {
-        for (int j = str_unicode_len(last_line); j < width; j++)
-        {
-            str_append_char(last_line, ' ');
-        }
-    }
+    // String *last_line = lines->objs[lines->count - 1];
+    // if (last_line)
+    // {
+    //     for (int j = str_unicode_len(last_line); j < width; j++)
+    //     {
+    //         str_append_char(last_line, ' ');
+    //     }
+    // }
     return lines;
 }
 
