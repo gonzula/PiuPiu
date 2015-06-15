@@ -5,8 +5,8 @@
 
 #include "list.h"
 #include "htable.h"
-#include "str.h"
 #include "vector.h"
+#include "str.h"
 #include "fman.h"
 
 List * list_from_vector(Vector * v);

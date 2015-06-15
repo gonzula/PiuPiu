@@ -1,8 +1,9 @@
-#include  <signal.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "tweet.h"
+
 
 FileManager *fman;
 
@@ -43,21 +44,19 @@ main(int argc, char *argv[])
                 {
                     printf("Nenhum resultado\n");
                 }
+                Vector *tweet_vector = vector_init();
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
                     long int offset = *((long int *)offset_vector->objs[i]);
                     if(fman_entry_at_offset(fman, offset, t))
                     {
-                        printf("@%3ld -> ", offset);
-                        tweet_print(t);
-                    }
-                    else
-                    {
-                        printf("@%3ld -> deleted", offset);
+                        vector_append(tweet_vector, t);
                     }
                     release(t);
                 }
+                tweet_print_many(tweet_vector);
+                release(tweet_vector);
                 release(offset_vector);
             }
             break;
@@ -72,21 +71,20 @@ main(int argc, char *argv[])
                 {
                     system("clear");
                 }
+                Vector *tweet_vector = vector_init();
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
                     long int offset = *((long int *)offset_vector->objs[i]);
                     if(fman_entry_at_offset(fman, offset, t))
                     {
-                        printf("@%3ld -> ", offset);
-                        tweet_print(t);
+                        vector_append(tweet_vector, t);
                     }
-                    printf("[pressione enter]\n");
-                    String *blank = str_from_stdin();
-                    release(blank);
-                    system("clear");
                     release(t);
+
                 }
+                tweet_print_many_waiting(tweet_vector);
+                release(tweet_vector);
                 release(offset_vector);
             }
             break;
@@ -101,16 +99,19 @@ main(int argc, char *argv[])
                 {
                     printf("Nenhum resultado\n");
                 }
+                Vector *tweet_vector = vector_init();
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
                     long int offset = *((long int *)offset_vector->objs[i]);
                     if(fman_entry_at_offset(fman, offset, t))
                     {
-                        tweet_print(t);
+                        vector_append(tweet_vector, t);
                     }
                     release(t);
                 }
+                tweet_print_many(tweet_vector);
+                release(tweet_vector);
                 release(offset_vector);
             }
             break;
@@ -124,16 +125,19 @@ main(int argc, char *argv[])
                 {
                     printf("Nenhum resultado\n");
                 }
+                Vector *tweet_vector = vector_init();
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
                     long int offset = *((long int *)offset_vector->objs[i]);
                     if(fman_entry_at_offset(fman, offset, t))
                     {
-                        tweet_print(t);
+                        vector_append(tweet_vector, t);
                     }
                     release(t);
                 }
+                tweet_print_many(tweet_vector);
+                release(tweet_vector);
                 release(offset_vector);
                 release(fav_s);
             }
@@ -147,16 +151,19 @@ main(int argc, char *argv[])
                 {
                     printf("Nenhum resultado\n");
                 }
+                Vector *tweet_vector = vector_init();
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
                     long int offset = *((long int *)offset_vector->objs[i]);
-                    if (fman_entry_at_offset(fman, offset, t))
+                    if(fman_entry_at_offset(fman, offset, t))
                     {
-                        tweet_print(t);
+                        vector_append(tweet_vector, t);
                     }
                     release(t);
                 }
+                tweet_print_many(tweet_vector);
+                release(tweet_vector);
                 release(offset_vector);
                 release(language);
             }
@@ -176,17 +183,19 @@ main(int argc, char *argv[])
                 {
                     printf("Nenhum resultado\n");
                 }
-
+                Vector *tweet_vector = vector_init();
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
                     long int offset = *((long int *)offset_vector->objs[i]);
                     if(fman_entry_at_offset(fman, offset, t))
                     {
-                        tweet_print(t);
+                        vector_append(tweet_vector, t);
                     }
                     release(t);
                 }
+                tweet_print_many(tweet_vector);
+                release(tweet_vector);
                 release(offset_vector);
                 release(language_vector);
                 release(fav_vector);
@@ -210,16 +219,19 @@ main(int argc, char *argv[])
                 {
                     printf("Nenhum resultado\n");
                 }
+                Vector *tweet_vector = vector_init();
                 for (int i = 0; i < offset_vector->count; ++i)
                 {
                     Tweet *t = tweet_init();
                     long int offset = *((long int *)offset_vector->objs[i]);
-                    if (fman_entry_at_offset(fman, offset, t))
+                    if(fman_entry_at_offset(fman, offset, t))
                     {
-                        tweet_print(t);
+                        vector_append(tweet_vector, t);
                     }
                     release(t);
                 }
+                tweet_print_many(tweet_vector);
+                release(tweet_vector);
                 release(offset_vector);
                 release(language_vector);
                 release(fav_vector);
@@ -240,17 +252,28 @@ main(int argc, char *argv[])
                 }
                 else
                 {
+                    Vector *tweet_vector = vector_init();
                     for (int i = 0; i < offset_vector->count; i++)
                     {
                         Tweet *t = tweet_init();
                         long int offset = *((long int *)offset_vector->objs[i]);
                         if(fman_entry_at_offset(fman, offset, t))
                         {
-                            printf("%d: ", i);
-                            tweet_print(t);
+                            // printf("%d: ", i);
+                            // tweet_print(t);
+                            vector_append(tweet_vector, t);
                         }
                         release(t);
                     }
+                    String *separator = tweet_separator();
+                    for (int i = 0; i < tweet_vector->count; i++)
+                    {
+                        printf("%d:\n", i);
+                        puts(separator->string);
+                        tweet_print(tweet_vector->objs[i]);
+                        puts(separator->string);
+                    }
+                    release(separator);
                     printf("Selecione o tweet a ser removido ou -1 para cancelar: ");
                     String *choice = str_from_stdin();
                     int ichoice = atoi(choice->string);
@@ -259,6 +282,7 @@ main(int argc, char *argv[])
                     {
                         release(offset_vector);
                         release(fav_s);
+                        release(tweet_vector);
                         break;
                     }
                     if (ichoice < 0 || ichoice >= offset_vector->count)
@@ -266,12 +290,15 @@ main(int argc, char *argv[])
                         printf("Opção inválida\n");
                         release(offset_vector);
                         release(fav_s);
+                        release(tweet_vector);
                         break;
                     }
                     fman_remove_entry_at_offset(fman, *(long int *)(offset_vector->objs[ichoice]));
+                    release(tweet_vector);
                 }
                 release(offset_vector);
                 release(fav_s);
+
             }
             break;
 

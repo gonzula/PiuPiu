@@ -100,14 +100,131 @@ tweet_print(Tweet *t)
 {
     // printf("%s: \"%s\" @ %s (%i favs in %s)\n", t->user->string, t->text->string, t->coordinates->string, t->favorite_count, t->language->string);
     // printf("%s: (%i favs in %s)\n", t->user->string, t->favorite_count, t->language->string);
-    printf("%s|%s|%s|%d|%s|%d|%ld\n",
-     t->user->string,
-     t->text->string,
-     t->coordinates->string,
-     t->favorite_count,
-     t->language->string,
-     t->retweet_count,
-     t->views_count);
+    // printf("%s|%s|%s|%d|%s|%d|%ld\n",
+    //  t->user->string,
+    //  t->text->string,
+    //  t->coordinates->string,
+    //  t->favorite_count,
+    //  t->language->string,
+    //  t->retweet_count,
+    //  t->views_count);
+
+    Vector *columns = vector_init();
+    {
+        Vector *lines = str_wrap(t->user, 22);
+        vector_append(columns, lines);
+        release(lines);
+    }
+    {
+        Vector *lines = str_wrap(t->text, 22);
+        vector_append(columns, lines);
+        release(lines);
+    }
+    {
+        Vector *lines = str_wrap(t->coordinates, 22);
+        vector_append(columns, lines);
+        release(lines);
+    }
+    {
+        String *s = str_from_int(t->favorite_count);
+        Vector *v = str_wrap(s, 22);
+        release(s);
+        vector_append(columns, v);
+        release(v);
+    }
+    {
+        Vector *lines = str_wrap(t->language, 22);
+        vector_append(columns, lines);
+        release(lines);
+    }
+    {
+        String *s = str_from_int(t->retweet_count);
+        Vector *v = str_wrap(s, 22);
+        release(s);
+        vector_append(columns, v);
+        release(v);
+    }
+    {
+        String *s = str_from_long(t->views_count);
+        Vector *v = str_wrap(s, 22);
+        release(s);
+        vector_append(columns, v);
+        release(v);
+    }
+    int max_height = 0;
+    for (int i = 0; i < columns->count; i++)
+    {
+        Vector *lines = columns->objs[i];
+        max_height = lines->count > max_height ? lines->count:max_height;
+
+    }
+
+    for (int i = 0; i < max_height; i++)
+    {
+        for (int j = 0; j < columns->count; ++j)
+        {
+            Vector *lines = columns->objs[j];
+            if (i >= lines->count)
+                printf("|                      ");
+            else
+            {
+                String *s = lines->objs[i];
+                printf("|%s", s->string);
+            }
+        }
+        printf("|\n");
+    }
+    release(columns);
+}
+
+
+String *
+tweet_separator()
+{
+    String *separator = str_init();
+    for (int i = 0; i < 7; i++)
+    {
+        str_append(separator, "+----------------------");
+    }
+    str_append(separator, "+");
+    return separator;
+}
+
+void
+tweet_print_many_waiting(Vector *v)
+{
+    String *separator = tweet_separator();
+    for (int i = 0; i < v->count; ++i)
+    {
+        printf("%d de %zu\n", i+1, v->count);
+        printf("%s\n", separator->string);
+        Tweet *t = v->objs[i];
+        tweet_print(t);
+        printf("%s\n", separator->string);
+        printf("[pressione enter]\n");
+        String *blank = str_from_stdin();
+        release(blank);
+        system("clear");
+    }
+    release(separator);
+}
+
+
+
+void
+tweet_print_many(Vector *v)
+{
+    String *separator = tweet_separator();
+
+    for (int i = 0; i < v->count; i++)
+    {
+        printf("%s\n", separator->string);
+        Tweet *t = v->objs[i];
+        tweet_print(t);
+    }
+    printf("%s\n", separator->string);
+
+    release(separator);
 }
 
 

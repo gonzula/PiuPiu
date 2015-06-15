@@ -3,7 +3,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "structures.h"
 #include "fman.h"
+
 
 
 typedef struct

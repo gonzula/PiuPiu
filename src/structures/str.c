@@ -88,6 +88,49 @@ str_center(String *str, int size) //   " asd  "
     newString[newSize] = 0;
 }
 
+Vector *
+str_wrap(String *str, int width)
+{
+    Vector *lines = vector_init();
+    for (int i = 0; i < str->len; i++)
+    {
+        int line_number = i/width;
+
+        if (line_number == lines->count)
+        {
+            String *s = str_init();
+            vector_append(lines, s);
+            release(s);
+        }
+        String *s = lines->objs[line_number];
+        str_append_char(s, str->string[i]);
+    }
+    String *last_line = lines->objs[lines->count - 1];
+    for (int j = last_line->len; j < width; j++)
+    {
+        str_append_char(last_line, ' ');
+    }
+    return lines;
+}
+
+String *
+str_from_int(int i)
+{
+    char buffer[100];
+    sprintf(buffer, "%d", i);
+    String *s = str_create(buffer);
+    return s;
+}
+
+String *
+str_from_long(long int l)
+{
+    char buffer[100];
+    sprintf(buffer, "%ld", l);
+    String *s = str_create(buffer);
+    return s;
+}
+
 int
 str_unicode_len(String *str)
 {

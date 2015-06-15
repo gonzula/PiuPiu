@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "ffields.h"
+#include "structures.h"
 
 typedef struct
 {

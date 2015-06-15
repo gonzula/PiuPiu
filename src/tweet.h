@@ -31,7 +31,10 @@ Tweet *tweet_from_stdin();
 
 int tweet_cmp(Tweet *t1, Tweet *t2);
 
+String *tweet_separator();
 void tweet_print(Tweet *t);
+void tweet_print_many(Vector *v);
+void tweet_print_many_waiting(Vector *v);
 
 FileFields *tweet_filefields();
 
