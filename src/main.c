@@ -173,7 +173,7 @@ main(int argc, char *argv[])
                 printf("Número de favoritos: ");
                 String *fav_s = str_from_stdin();
                 int fav = atoi(fav_s->string);
-                printf("idioma: ");
+                printf("Idioma: ");
                 String *language = str_from_stdin();
                 Vector *language_vector = fman_search_by_field(fman, 4, language);
                 Vector *fav_vector = fman_search_by_field(fman, 3, &fav);
@@ -208,7 +208,7 @@ main(int argc, char *argv[])
                 printf("Número de favoritos: ");
                 String *fav_s = str_from_stdin();
                 int fav = atoi(fav_s->string);
-                printf("idioma: ");
+                printf("Idioma: ");
                 String *language = str_from_stdin();
                 Vector *language_vector = fman_search_by_field(fman, 4, language);
                 Vector *fav_vector = fman_search_by_field(fman, 3, &fav);
@@ -259,8 +259,6 @@ main(int argc, char *argv[])
                         long int offset = *((long int *)offset_vector->objs[i]);
                         if(fman_entry_at_offset(fman, offset, t))
                         {
-                            // printf("%d: ", i);
-                            // tweet_print(t);
                             vector_append(tweet_vector, t);
                         }
                         release(t);
@@ -271,7 +269,7 @@ main(int argc, char *argv[])
                     release(header);
                     for (int i = 0; i < tweet_vector->count; i++)
                     {
-                        printf("%d:\n", i);
+                        printf("\n\nopção: %d\n", i);
                         puts(separator->string);
                         tweet_print(tweet_vector->objs[i]);
                         puts(separator->string);
@@ -279,6 +277,14 @@ main(int argc, char *argv[])
                     release(separator);
                     printf("Selecione o tweet a ser removido ou -1 para cancelar: ");
                     String *choice = str_from_stdin();
+                    if (!choice->len)
+                    {
+                        release(offset_vector);
+                        release(fav_s);
+                        release(tweet_vector);
+                        release(choice);
+                        break;
+                    }
                     int ichoice = atoi(choice->string);
                     release(choice);
                     if (ichoice == -1)

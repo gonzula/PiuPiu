@@ -97,10 +97,29 @@ str_wrap(String *str, int width)
         vector_append(lines, str);
         return lines;
     }
-    for (int i = 0; i < str->len; i++)
+    int toFinishSequence = 0;
+    int i = 0; //bytes
+    int u = 0; //chars
+    while (i < str->len)
     {
-        int line_number = i/width;
+        unsigned char c = str->ustring[i++];
 
+        if (toFinishSequence)
+        {
+            toFinishSequence--;
+        }
+        else if (c > 128)
+        {
+            bin8 b;
+            b.uc = c;
+            toFinishSequence = (b.b7?1:0) + (b.b6?1:0) + (b.b5?1:0);
+            toFinishSequence -= 1;
+            u++;
+        }
+        else
+            u++;
+
+        int line_number = (u-1)/width;
         if (line_number == lines->count)
         {
             String *s = str_init();
@@ -108,12 +127,16 @@ str_wrap(String *str, int width)
             release(s);
         }
         String *s = lines->objs[line_number];
-        str_append_char(s, str->string[i]);
+        str_append_char(s, c);
     }
+
     String *last_line = lines->objs[lines->count - 1];
-    for (int j = last_line->len; j < width; j++)
+    if (last_line)
     {
-        str_append_char(last_line, ' ');
+        for (int j = str_unicode_len(last_line); j < width; j++)
+        {
+            str_append_char(last_line, ' ');
+        }
     }
     return lines;
 }
