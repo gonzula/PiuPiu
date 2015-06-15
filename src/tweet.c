@@ -217,7 +217,7 @@ tweet_print_many_waiting(Vector *v)
         printf("[pressione enter para continuar ou q para parar]\n");
         String *blank = str_from_stdin();
         if (strcmp("q", blank->string) ||
-            strcmp("Q", blank->string) ||)
+            strcmp("Q", blank->string))
         {
             release(separator);
             release(blank);
