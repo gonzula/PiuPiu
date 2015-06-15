@@ -280,6 +280,7 @@ tweet_print_many_waiting(Vector *v)
         {
             release(separator);
             release(blank);
+            release(header);
             break;
         }
         release(blank);
