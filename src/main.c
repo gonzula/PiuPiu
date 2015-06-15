@@ -1,3 +1,12 @@
+//////////////////////////////////////////////
+//                                          //
+//  Carlos Eduardo Ayoub Fialho #7563703    //
+//  João Gustavo Cabral de Marins #7563982  //
+//  Romeu Bertho Junior #7151905            //
+//                                          //
+//////////////////////////////////////////////
+
+
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
