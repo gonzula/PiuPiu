@@ -8,7 +8,7 @@
 void ffields_release(void *o);
 
 FileFields *
-ffields_create(size_t count, ...)
+ffields_create(size_t count, ...)   // cria o FileFields
 {
     va_list ap;
     int j;
@@ -25,18 +25,18 @@ ffields_create(size_t count, ...)
     {
         if ((j % 3) == 0)
         {
-            ff->fields[j/3] = va_arg(ap, FieldType);
+            ff->fields[j/3] = va_arg(ap, FieldType); //salva o tipo
         }
         else if ((j % 3) == 1)
         {
-            ff->offsets[j/3] = va_arg(ap, size_t);
+            ff->offsets[j/3] = va_arg(ap, size_t); //salva o offset
         }
         else if ((j % 3) == 2)
         {
-            if (va_arg(ap, int))
+            if (va_arg(ap, int)) // se usuário pediu indice
             {
                 ff->indexes[ff->idxc] = j/3;
-                ff->idxc++;
+                ff->idxc++; // incrementa numero de indices
             }
         }
     }
@@ -68,7 +68,7 @@ ffields_print(FileFields *ff)
 
 
 size_t
-ftype_size_of(FieldType ft)
+ftype_size_of(FieldType ft) //retorna o tamanho de um campo
 {
     switch (ft)
     {
@@ -85,9 +85,9 @@ ftype_size_of(FieldType ft)
     return 0;
 }
 
-size_t
+size_t // retorna o tamanho de conjunto de campos
 ffields_size(FileFields *ff, size_t str_size)
-{
+{                                   // ↑ o tamanho que deve ser considerado quando o campo é string
     size_t size = 0;
     for (int i = 0; i < ff->fieldc; ++i)
     {

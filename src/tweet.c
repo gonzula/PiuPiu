@@ -47,11 +47,11 @@ tweet_from_stdin()
     String *aux_str;
     printf("Insira o usuário: ");
     String *user = str_from_stdin();
-    if (!user->len)
-    {
-        release(user);
-        return NULL;
-    }
+    if (!user->len)                      // se usuario estiver em branco
+    {                                    //  retorna NULL
+        release(user);                   //
+        return NULL;                     // é usado como condição de parada
+    }                                    //  na inserção
 
     printf("Insira o texto: ");
     String *text = str_from_stdin();
@@ -89,7 +89,7 @@ tweet_from_stdin()
 }
 
 int
-tweet_cmp(Tweet *t1, Tweet *t2)
+tweet_cmp(Tweet *t1, Tweet *t2)  //compara tweets
 {
     int user_result = strcmp(t1->user->string, t2->user->string);
     if (user_result)
@@ -98,66 +98,66 @@ tweet_cmp(Tweet *t1, Tweet *t2)
 }
 
 int
-_tty_width()
+_tty_width() // função interna para pegar o tamamho do terminal
 {
     struct winsize w;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
-    return w.ws_col;
+    return w.ws_col/7 - 2;  // ajustes para caber na tela
 }
 
 void
 tweet_print(Tweet *t)
 {
-    int width = _tty_width() / 7 -2;
+    int width = _tty_width();
 
-    Vector *columns = vector_init();
-    {
-        Vector *lines = str_wrap(t->user, width);
-        vector_append(columns, lines);
-        release(lines);
-    }
-    {
-        Vector *lines = str_wrap(t->text, width);
-        vector_append(columns, lines);
-        release(lines);
-    }
-    {
-        Vector *lines = str_wrap(t->coordinates, width);
-        vector_append(columns, lines);
-        release(lines);
-    }
-    {
-        String *s = str_from_int(t->favorite_count);
-        Vector *v = str_wrap(s, width);
-        release(s);
-        vector_append(columns, v);
-        release(v);
-    }
-    {
-        Vector *lines = str_wrap(t->language, width);
-        vector_append(columns, lines);
-        release(lines);
-    }
-    {
-        String *s = str_from_int(t->retweet_count);
-        Vector *v = str_wrap(s, width);
-        release(s);
-        vector_append(columns, v);
-        release(v);
-    }
-    {
-        String *s = str_from_long(t->views_count);
-        Vector *v = str_wrap(s, width);
-        release(s);
-        vector_append(columns, v);
-        release(v);
-    }
+    Vector *columns = vector_init();                       //
+    {                                                      //
+        Vector *lines = str_wrap(t->user, width);          //
+        vector_append(columns, lines);                     //
+        release(lines);                                    //
+    }                                                      //
+    {                                                      //
+        Vector *lines = str_wrap(t->text, width);          //
+        vector_append(columns, lines);                     //   cria as colunas com os textos
+        release(lines);                                    //
+    }                                                      //
+    {                                                      //
+        Vector *lines = str_wrap(t->coordinates, width);   //
+        vector_append(columns, lines);                     //
+        release(lines);                                    //
+    }                                                      //
+    {                                                      //
+        String *s = str_from_int(t->favorite_count);       //
+        Vector *v = str_wrap(s, width);                    //
+        release(s);                                        //
+        vector_append(columns, v);                         //
+        release(v);                                        //
+    }                                                      //
+    {                                                      //
+        Vector *lines = str_wrap(t->language, width);      //
+        vector_append(columns, lines);                     //
+        release(lines);                                    //
+    }                                                      //
+    {                                                      //
+        String *s = str_from_int(t->retweet_count);        //
+        Vector *v = str_wrap(s, width);                    //
+        release(s);                                        //
+        vector_append(columns, v);                         //
+        release(v);                                        //
+    }                                                      //
+    {                                                      //
+        String *s = str_from_long(t->views_count);         //
+        Vector *v = str_wrap(s, width);                    //
+        release(s);                                        //
+        vector_append(columns, v);                         //
+        release(v);                                        //
+    }                                                      //
     int max_height = 0;
     for (int i = 0; i < columns->count; i++)
     {
         Vector *lines = columns->objs[i];
-        max_height = lines->count > max_height ? lines->count:max_height;
+        max_height = lines->count > max_height ? lines->count:max_height; //pega o valor máximo de altura
 
     }
 
@@ -166,7 +166,7 @@ tweet_print(Tweet *t)
         for (int j = 0; j < columns->count; ++j)
         {
             Vector *lines = columns->objs[j];
-            if (i >= lines->count)
+            if (i >= lines->count)  // se a linha não existe nessa coluna
             {
                 printf("|");
                 for (int k = 0; k < width; k++)
@@ -177,13 +177,13 @@ tweet_print(Tweet *t)
             else
             {
                 String *s = lines->objs[i];
-                if (j == 3 || j == 5 || j == 6)
+                if (j == 3 || j == 5 || j == 6)  // se for campo numérico (fav, retweet, views)
                 {
-                    str_rjust(s, width);
+                    str_rjust(s, width);  // ajusta pra direita
                 }
                 else
                 {
-                    str_ljust(s, width);
+                    str_ljust(s, width);  // ajusta pra esquerda
                 }
                 printf("|%s", s->string);
             }
@@ -195,9 +195,9 @@ tweet_print(Tweet *t)
 
 
 String *
-tweet_separator()
+tweet_separator() // cria o separador
 {
-    int width = _tty_width() / 7 -2;
+    int width = _tty_width();
     String *separator = str_init();
     for (int i = 0; i < 7; i++)
     {
@@ -211,9 +211,9 @@ tweet_separator()
     return separator;
 }
 String *
-tweet_header()
+tweet_header() // cria o cabeçalho
 {
-    int width = _tty_width() / 7 -2;
+    int width = _tty_width();
     String *separator = tweet_separator();
     String *header = str_init();
     str_append(header, separator->string);
@@ -283,8 +283,8 @@ tweet_print_many_waiting(Vector *v)
         printf("%s\n", separator->string);
         printf("[pressione enter para continuar ou q para parar]\n");
         String *blank = str_from_stdin();
-        if (!strcmp("q", blank->string) ||
-            !strcmp("Q", blank->string))
+        if (!strcmp("q", blank->string) ||    //
+            !strcmp("Q", blank->string))      //testa condição de parada
         {
             release(separator);
             release(blank);
@@ -324,23 +324,28 @@ void
 tweet_release(void *o)
 {
     Tweet *t = o;
-    release(t->text);
-    release(t->user);
-    release(t->coordinates);
-    release(t->language);
+    release(t->text);         //
+    release(t->user);         //
+    release(t->coordinates);  //solta tudo
+    release(t->language);     //
 }
 
 FileFields *
-tweet_filefields()
+tweet_filefields()  // cria o ffields
 {
     Tweet t;
     return ffields_create(7,
+//   ↓tipo do campo
     str_f,  (void *)&t.text - (void *)&t,           0,  /*text*/
+        //   ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓  offset do campo
     str_f,  (void *)&t.user - (void *)&t,           0,  /*user*/
+                                                //  ↓ cria indice ou não
     str_f,  (void *)&t.coordinates - (void *)&t,    0,  /*coordinates*/
     int_f,  (void *)&t.favorite_count - (void *)&t, 1,  /*favorite_count*/
     str_f,  (void *)&t.language - (void *)&t,       1,  /*language*/
     int_f,  (void *)&t.retweet_count - (void *)&t,  0,  /*retweet_count*/
     long_f, (void *)&t.views_count - (void *)&t,    0   /*views_count*/
     );
+
+    // tipo, offset, cria indice secundario
 }

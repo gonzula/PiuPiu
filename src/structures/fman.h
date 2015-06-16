@@ -15,7 +15,7 @@ typedef struct
     Vector *indexes;
 } FileManager;
 
-#include "fidx.h"
+#include "fidx.h" //fidx precisa do fman
 
 
 
