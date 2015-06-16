@@ -282,6 +282,7 @@ tweets_from_offsets(FileManager *fman, Vector *offset_vector)
 void
 print_tweets_from_offset_vector(FileManager *fman, Vector *offset_vector, int waiting)
 {
+    Vector *tweet_vector = tweets_from_offsets(fman, offset_vector);
     if (!waiting)
         tweet_print_many(tweet_vector); //imprime os tweets
     else
