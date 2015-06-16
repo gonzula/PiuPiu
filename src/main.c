@@ -288,7 +288,6 @@ print_tweets_from_offset_vector(FileManager *fman, Vector *offset_vector, int wa
     else
         tweet_print_many_waiting(tweet_vector); //imprime os tweets um por vez
     release(tweet_vector);
-    release(offset_vector);
 }
 
 void  INThandler(int sig)   //
